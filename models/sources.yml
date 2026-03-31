@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: <source_name>
+    schema: <schema_name>
+    tables:
+      - name: <table_name>
+        identifier: <table_name_in_db>
+        description: <table_description>

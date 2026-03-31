@@ -1,0 +1,110 @@
+name: CI/CD
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  push:
+    branches:
+      - '!master' #put the name of the main branch here
+
+jobs:
+  dbt_ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Python
+      - name: Set Up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      #REMOVE Step 3,4,5 if your project doesn't need an SSH Tunnel
+      # Step 3: Add SSH private key and configure known_hosts
+      - name: Add SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/production_ddp
+          chmod 600 ~/.ssh/production_ddp
+
+      - name: Add remote host to known_hosts
+        run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      # Step 4: Debug SSH connection
+      - name: Debug SSH connection
+        run: |
+          ssh -i ~/.ssh/production_ddp -o StrictHostKeyChecking=no ${{ secrets.DB_USER }}@${{ secrets.SSH_HOST }} echo "SSH connection successful"
+
+      # Step 5: Establish SSH tunnel
+      - name: Establish SSH tunnel
+        run: |
+          ssh -fN \
+            -L 5432:${{ secrets.POSTGRES_HOST }}:5432 \
+            -i ~/.ssh/production_ddp \
+            ${{ secrets.DB_USER }}@${{ secrets.SSH_HOST }}
+
+      # Step 6: Install Python dependencies
+      - name: Install requirements
+        run: pip install -r requirements.txt  
+
+        #REPLACE <dbt_project_name> with the actual name of the profile required
+      # Step 7: Create profiles.yml
+      - name: Create profiles.yml
+        run: |
+          mkdir -p /home/runner/.dbt
+          echo "Creating profiles.yml..."
+          cat <<EOF > /home/runner/.dbt/profiles.yml
+          <dbt_project_name>:
+            outputs:
+              dev:
+                dbname: "{{ env_var('POSTGRES_DBNAME') }}"
+                host: "{{ env_var('POSTGRES_HOST') }}"
+                password: "{{ env_var('POSTGRES_PASSWORD') }}"
+                port: 5432
+                schema: dev
+                threads: 8
+                type: postgres
+                user: "{{ env_var('POSTGRES_USER') }}"
+            target: dev
+          EOF
+          echo "profiles.yml created successfully."
+          ls -al /home/runner/.dbt
+
+      # Step 8: Install dbt dependencies
+      - name: Install dbt dependencies
+        run: dbt deps
+
+      # Step 9: Run dbt build
+      - name: dbt build
+        run: dbt build --full-refresh
+        env:
+          POSTGRES_DBNAME: ${{ secrets.POSTGRES_DBNAME }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: 127.0.0.1 # Use localhost since the SSH tunnel forwards the port
+          DBT_PROFILES_DIR: /home/runner/.dbt
+
+      # Step 10: Benchmark models using sqlfluff
+      - name: Benchmarking models
+        run: sqlfluff lint models --bench
+        env:
+          POSTGRES_DBNAME: ${{ secrets.POSTGRES_DBNAME }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: 127.0.0.1
+
+      # Step 11: Lint models using sqlfluff
+      - name: Lint models
+        run: sqlfluff lint models -f human
+        env:
+          POSTGRES_DBNAME: ${{ secrets.POSTGRES_DBNAME }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: 127.0.0.1
