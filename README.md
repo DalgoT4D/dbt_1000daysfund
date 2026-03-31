@@ -1,12 +1,5 @@
-# dbt_starter
-DBT Starter Template Repository with macros, CI/CD Templates/ Folder Structure which are commonly used in Dalgo's DBT Projects
-
-### Using the starter project
-
-Try running the following commands:
-- dbt run
-- dbt test
-
+# dbt_1000daysfund
+DBT project created for 1000 Days Fund
 
 ### Resources:
 - Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
