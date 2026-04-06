@@ -1,9 +1,10 @@
 version: 2
 
 sources:
-  - name: <source_name>
-    schema: <schema_name>
+  - name: raw_kobo
+    schema: raw_kobo
+    quoting:
+      identifier: true
     tables:
-      - name: <table_name>
-        identifier: <table_name_in_db>
-        description: <table_description>
+      - name: ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM
+        identifier: ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM

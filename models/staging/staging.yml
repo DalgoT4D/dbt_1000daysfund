@@ -1,0 +1,98 @@
+version: 2
+
+models:
+  - name: asesmen_fungsionalitas_kader_CHW_AIM
+    description: Flattened staging model for the Asesmen Fungsionalitas Kader CHW AIM Kobo submission data from `raw_kobo.ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM`.
+    columns:
+      - name: submission_id
+        description: Kobo submission identifier from `_id`.
+        tests:
+          - not_null
+          - unique
+      - name: submission_start_at
+        description: Timestamp when the form session started.
+        tests:
+          - not_null
+      - name: submission_end_at
+        description: Timestamp when the form session ended.
+        tests:
+          - not_null
+      - name: submission_time
+        description: Timestamp when the submission was received by Kobo.
+        tests:
+          - not_null
+      - name: submission_uuid
+        description: Kobo submission UUID from `_uuid`.
+        tests:
+          - not_null
+          - unique
+      - name: submission_status
+        description: Submission status from Kobo, such as `submitted_via_web`.
+      - name: submission_version
+        description: Kobo form version identifier.
+      - name: submitted_by
+        description: User who submitted the form, when Kobo captured it.
+      - name: xform_id_string
+        description: Kobo xForm identifier string.
+      - name: formhub_uuid
+        description: Formhub UUID stored in the raw submission payload.
+      - name: meta_root_uuid
+        description: Root UUID from the Kobo metadata block.
+      - name: meta_instance_id
+        description: Instance identifier from the Kobo metadata block.
+      - name: meta_deprecated_id
+        description: Deprecated instance identifier from the Kobo metadata block.
+      - name: validation_status
+        description: Validation status object returned by Kobo.
+      - name: tags
+        description: Array of Kobo submission tags.
+      - name: notes
+        description: Array of Kobo submission notes.
+      - name: attachments
+        description: Array of attachment metadata for the submission.
+      - name: geolocation
+        description: Raw geolocation array from Kobo.
+      - name: geolocation_latitude
+        description: Latitude parsed from the first geolocation array position.
+      - name: geolocation_longitude
+        description: Longitude parsed from the second geolocation array position.
+      - name: pembukaan_provinsi
+        description: Province code captured in the pembukaan section.
+      - name: pembukaan_kota_kabupaten
+        description: City or regency code captured in the pembukaan section.
+      - name: pembukaan_kecamatan
+        description: District code captured in the pembukaan section.
+      - name: pembukaan_desa_kelurahan
+        description: Village or ward code captured in the pembukaan section.
+      - name: pembukaan_puskesmas
+        description: Puskesmas code captured in the pembukaan section.
+      - name: pembukaan_puskesmas_lain
+        description: Free-text puskesmas value captured when the selected puskesmas is `lainnya`.
+      - name: pembukaan_enumerator_nama
+        description: Enumerator name recorded in the pembukaan section.
+      - name: pembukaan_kunjungan_tanggal
+        description: Visit date recorded in the pembukaan section.
+        tests:
+          - not_null
+      - name: komponen_asesmen_peran_dan_rekrutmen
+        description: Score captured for komponen asesmen Peran dan Rekrutmen.
+      - name: komponen_asesmen_pelatihan
+        description: Score captured for komponen asesmen Pelatihan.
+      - name: komponen_asesmen_akreditasi
+        description: Score captured for komponen asesmen Akreditasi.
+      - name: komponen_asesmen_peralatan_dan_perlengkapan
+        description: Score captured for komponen asesmen Peralatan dan Perlengkapan.
+      - name: komponen_asesmen_supervisi
+        description: Score captured for komponen asesmen Supervisi.
+      - name: komponen_asesmen_insentif
+        description: Score captured for komponen asesmen Insentif.
+      - name: komponen_asesmen_dukungan_komunitas
+        description: Score captured for komponen asesmen Dukungan Komunitas.
+      - name: komponen_asesmen_peluang_untuk_maju
+        description: Score captured for komponen asesmen Peluang untuk Maju.
+      - name: komponen_asesmen_data
+        description: Score captured for komponen asesmen Data.
+      - name: komponen_asesmen_sistem_kesehatan
+        description: Score captured for komponen asesmen Sistem Kesehatan.
+      - name: raw_record
+        description: Original JSON submission payload retained for traceability.
