@@ -1,6 +1,382 @@
 version: 2
 
 models:
+  - name: 09a_stg
+    description: Combined staging model for the pre-training and post-training sheets in `raw_sheets.09a_pre` and `raw_sheets.09a_post`, with `pre_post` indicating the survey stage.
+    columns:
+      - name: pre_post
+        description: Survey stage indicator. `pre` comes from `raw_sheets.09a_pre` and `post` comes from `raw_sheets.09a_post`.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: nik
+        description: Indonesian national identity number (NIK) captured in the raw sheet.
+      - name: nama
+        description: Respondent name captured in the raw sheet.
+      - name: usia
+        description: Respondent age parsed as a numeric value from the raw sheet.
+      - name: peran
+        description: Respondent role captured in the raw sheet.
+      - name: score
+        description: Achieved pre-test or post-test score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: max_score
+        description: Maximum possible score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: jenis_kelamin
+        description: Gender captured in the raw sheet.
+      - name: pendidikan_terakhir
+        description: Highest completed education level captured in the raw sheet.
+      - name: nomor_hp_wa
+        description: WhatsApp phone number captured in the raw sheet.
+      - name: provinsi
+        description: Province captured in the raw sheet.
+      - name: kabupaten
+        description: Regency or city captured in the raw sheet.
+      - name: kecamatan
+        description: District captured in the raw sheet.
+      - name: desa
+        description: Village captured in the raw sheet.
+      - name: puskesmas_pengampu
+        description: Supervising puskesmas captured in the raw sheet.
+      - name: nama_posyandu_binaan
+        description: Name of the assisted or supervised posyandu captured in the raw sheet.
+      - name: submission_timestamp
+        description: Timestamp recorded in the raw sheet as text.
+      - name: q1_sasaran_dampingan_ibu_hamil
+        description: "Question 1: Which pregnant women are targeted for the case management support program?"
+      - name: q2_alasan_pemantauan_tekanan_darah_ibu_hamil
+        description: "Question 2: Why should a pregnant woman's blood pressure be monitored?"
+      - name: q3_penyebab_hipertensi_saat_hamil
+        description: "Question 3: What can cause hypertension to increase during pregnancy?"
+      - name: q4_bukan_saran_pencegahan_hipertensi
+        description: "Question 4: Which option is not recommended to help a mother avoid hypertension?"
+      - name: q5_tindakan_tekanan_sistolik_tinggi
+        description: "Question 5: Response captured for a pregnant participant with high systolic blood pressure."
+      - name: q6_tindakan_tekanan_darah_atas_140
+        description: "Question 6: Response captured for a pregnant participant with blood pressure above 140."
+      - name: q7_tindakan_tekanan_darah_atas_120
+        description: "Question 7: Response captured for a pregnant participant with blood pressure above 120."
+      - name: q8_kriteria_risiko_darah_tinggi
+        description: "Question 8: When is a pregnant woman considered at risk of high blood pressure?"
+      - name: q9_risiko_ibu_hamil_kek
+        description: "Question 9: What risks can occur when a pregnant woman experiences chronic energy deficiency (KEK)?"
+      - name: q10_cara_memantau_tekanan_darah
+        description: "Question 10: How do you monitor blood pressure?"
+      - name: q11_menjaga_tekanan_darah_ibu
+        description: "Question 11: What should be done to keep a pregnant woman's blood pressure healthy?"
+      - name: q12_bukan_manfaat_ttd
+        description: "Question 12: Which option is not a benefit of iron supplement tablets (TTD)?"
+      - name: q13_bukan_saran_untuk_ibu_kek
+        description: "Question 13: Which option is not recommended advice for a pregnant woman with chronic energy deficiency (KEK)?"
+      - name: q14_manfaat_kalsium
+        description: "Question 14: What are the benefits of calcium-rich foods or calcium supplements?"
+      - name: q15_penyuluhan_untuk_ibu_hipertensi
+        description: "Question 15: Which information or counseling can be given to a pregnant woman with hypertension?"
+      - name: q16_monitoring_ibu_hamil_hipertensi
+        description: "Question 16: What monitoring is needed for pregnant women targeted for hypertension support?"
+      - name: q17_sasaran_dampingan_baduta
+        description: "Question 17: Which children under two are targeted for the support program?"
+      - name: q18_alasan_memantau_perlambatan_berat_badan
+        description: "Question 18: Why must slowed weight gain be monitored?"
+      - name: q19_sasaran_dampingan_perlambatan_pertumbuhan
+        description: "Question 19: In the case management program, who should receive support for growth slowing?"
+      - name: q20_penyuluhan_saat_kenaikan_bb_tidak_sesuai_kbm
+        description: "Question 20: If a child's weight gain is not aligned with KBM, what counseling should be given?"
+      - name: q21_penyuluhan_utama_saat_kenaikan_bb_tidak_sesuai_kbm
+        description: "Question 21: If weight gain is not aligned with KBM, what is the main counseling topic?"
+      - name: q22_status_pertumbuhan_tidak_naik
+        description: "Question 22: Which growth status corresponds to weight that does not increase?"
+      - name: q23_bukan_penyebab_perlambatan_pertumbuhan
+        description: "Question 23: Which option is not a cause of growth slowing?"
+      - name: q24_pertambahan_panjang_badan_tahun_pertama
+        description: "Question 24: What length gain is expected during the first year after birth?"
+      - name: q25_cara_memantau_pertumbuhan_balita
+        description: "Question 25: How can toddler growth be monitored?"
+      - name: q26_monitoring_baduta_perlambatan_pertumbuhan
+        description: "Question 26: What monitoring is needed for children under two with growth slowing?"
+      - name: training_strengths
+        description: Post-training feedback on what went well in the training session. Null for `pre` rows.
+      - name: training_satisfaction
+        description: Post-training satisfaction feedback for the training session. Null for `pre` rows.
+      - name: training_improvements
+        description: Post-training feedback on improvements needed for future sessions. Null for `pre` rows.
+      - name: confidence_to_apply_knowledge_or_skills
+        description: Post-training self-reported confidence to apply the knowledge or skills from the training. Null for `pre` rows.
+  - name: 09a_eng_stg
+    description: English column-name projection of `09a_stg`. Raw response values are preserved as captured; only the field names and documentation are translated into English.
+    columns:
+      - name: survey_stage
+        description: Survey stage indicator carried from `09a_stg.pre_post`. `pre` comes from `raw_sheets.09a_pre` and `post` comes from `raw_sheets.09a_post`.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: national_id_number
+        description: Indonesian national identity number (NIK) captured in the raw sheet.
+      - name: respondent_name
+        description: Respondent name captured in the raw sheet.
+      - name: respondent_age
+        description: Respondent age parsed as a numeric value from the raw sheet.
+      - name: respondent_role
+        description: Respondent role captured in the raw sheet.
+      - name: score
+        description: Achieved pre-test or post-test score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: max_score
+        description: Maximum possible score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: gender
+        description: Gender captured in the raw sheet.
+      - name: highest_education_level
+        description: Highest completed education level captured in the raw sheet.
+      - name: whatsapp_phone_number
+        description: WhatsApp phone number captured in the raw sheet.
+      - name: province
+        description: Province captured in the raw sheet.
+      - name: regency_or_city
+        description: Regency or city captured in the raw sheet.
+      - name: district
+        description: District captured in the raw sheet.
+      - name: village
+        description: Village captured in the raw sheet.
+      - name: supervising_primary_health_center_name
+        description: Supervising puskesmas or primary health center captured in the raw sheet.
+      - name: assisted_integrated_health_post_name
+        description: Name of the assisted or supervised posyandu captured in the raw sheet.
+      - name: response_timestamp
+        description: Timestamp recorded in the raw sheet as text.
+      - name: q1_target_pregnant_women_for_case_management_support
+        description: "Question 1: Which pregnant women are targeted for the case management support program?"
+      - name: q2_reason_to_monitor_pregnancy_blood_pressure
+        description: "Question 2: Why should a pregnant woman's blood pressure be monitored?"
+      - name: q3_cause_of_hypertension_in_pregnancy
+        description: "Question 3: What can cause hypertension to increase during pregnancy?"
+      - name: q4_not_a_hypertension_prevention_recommendation
+        description: "Question 4: Which option is not recommended to help a mother avoid hypertension?"
+      - name: q5_action_for_high_systolic_blood_pressure
+        description: "Question 5: Response captured for a pregnant participant with high systolic blood pressure."
+      - name: q6_action_for_blood_pressure_above_140
+        description: "Question 6: Response captured for a pregnant participant with blood pressure above 140."
+      - name: q7_action_for_blood_pressure_above_120
+        description: "Question 7: Response captured for a pregnant participant with blood pressure above 120."
+      - name: q8_high_blood_pressure_risk_definition
+        description: "Question 8: When is a pregnant woman considered at risk of high blood pressure?"
+      - name: q9_risks_of_maternal_chronic_energy_deficiency
+        description: "Question 9: What risks can occur when a pregnant woman experiences chronic energy deficiency (KEK)?"
+      - name: q10_how_to_monitor_blood_pressure
+        description: "Question 10: How do you monitor blood pressure?"
+      - name: q11_how_to_keep_maternal_blood_pressure_healthy
+        description: "Question 11: What should be done to keep a pregnant woman's blood pressure healthy?"
+      - name: q12_not_a_benefit_of_iron_tablets
+        description: "Question 12: Which option is not a benefit of iron supplement tablets (TTD)?"
+      - name: q13_not_advice_for_maternal_chronic_energy_deficiency
+        description: "Question 13: Which option is not recommended advice for a pregnant woman with chronic energy deficiency (KEK)?"
+      - name: q14_benefits_of_calcium_foods_or_supplements
+        description: "Question 14: What are the benefits of calcium-rich foods or calcium supplements?"
+      - name: q15_counseling_for_pregnant_women_with_hypertension
+        description: "Question 15: Which information or counseling can be given to a pregnant woman with hypertension?"
+      - name: q16_monitoring_for_pregnant_women_with_hypertension
+        description: "Question 16: What monitoring is needed for pregnant women targeted for hypertension support?"
+      - name: q17_target_children_under_two_for_support
+        description: "Question 17: Which children under two are targeted for the support program?"
+      - name: q18_why_slowed_weight_gain_must_be_monitored
+        description: "Question 18: Why must slowed weight gain be monitored?"
+      - name: q19_target_for_growth_slowing_support
+        description: "Question 19: In the case management program, who should receive support for growth slowing?"
+      - name: q20_counseling_when_weight_gain_is_off_kbm
+        description: "Question 20: If a child's weight gain is not aligned with KBM, what counseling should be given?"
+      - name: q21_main_counseling_when_weight_gain_is_off_kbm
+        description: "Question 21: If weight gain is not aligned with KBM, what is the main counseling topic?"
+      - name: q22_growth_status_for_weight_not_increasing
+        description: "Question 22: Which growth status corresponds to weight that does not increase?"
+      - name: q23_not_a_cause_of_growth_slowing
+        description: "Question 23: Which option is not a cause of growth slowing?"
+      - name: q24_length_gain_in_first_year_after_birth
+        description: "Question 24: What length gain is expected during the first year after birth?"
+      - name: q25_how_to_monitor_toddler_growth
+        description: "Question 25: How can toddler growth be monitored?"
+      - name: q26_monitoring_for_children_with_growth_slowing
+        description: "Question 26: What monitoring is needed for children under two with growth slowing?"
+      - name: what_went_well_in_training
+        description: Post-training feedback on what went well in the training session. Null for `pre` rows.
+      - name: training_satisfaction
+        description: Post-training satisfaction feedback for the training session. Null for `pre` rows.
+      - name: training_improvements_needed
+        description: Post-training feedback on improvements needed for future sessions. Null for `pre` rows.
+      - name: confidence_to_apply_knowledge_or_skills
+        description: Post-training self-reported confidence to apply the knowledge or skills from the training. Null for `pre` rows.
+  - name: 09b_stg
+    description: Combined staging model for the pre-training and post-training sheets in `raw_sheets.09b_pre` and `raw_sheets.09b_post`, with `pre_post` indicating the survey stage.
+    columns:
+      - name: pre_post
+        description: Survey stage indicator. `pre` comes from `raw_sheets.09b_pre` and `post` comes from `raw_sheets.09b_post`.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: nik
+        description: Indonesian national identity number (NIK) captured in the raw sheet.
+      - name: nama
+        description: Respondent name captured in the raw sheet.
+      - name: usia
+        description: Respondent age parsed as a numeric value from the raw sheet.
+      - name: score
+        description: Achieved score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: max_score
+        description: Maximum possible score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: jenis_kelamin
+        description: Gender captured in the raw sheet.
+      - name: pendidikan_terakhir
+        description: Highest completed education level captured in the raw sheet.
+      - name: nomor_hp_wa
+        description: WhatsApp phone number captured in the raw sheet.
+      - name: provinsi
+        description: Province captured in the raw sheet.
+      - name: kabupaten
+        description: Regency or city captured in the raw sheet.
+      - name: kecamatan
+        description: District captured in the raw sheet.
+      - name: desa
+        description: Village captured in the raw sheet.
+      - name: puskesmas_pengampu
+        description: Supervising puskesmas captured in the raw sheet.
+      - name: nama_posyandu_binaan
+        description: Name of the assisted or supervised posyandu captured in the raw sheet.
+      - name: submission_timestamp
+        description: Timestamp recorded in the raw sheet as text.
+      - name: q1_sasaran_dampingan_ibu_hamil
+        description: "Question 1: Which pregnant women are targeted for the case management support program?"
+      - name: q2_alasan_pemantauan_tekanan_darah_ibu_hamil
+        description: "Question 2: Why should a pregnant woman's blood pressure be monitored?"
+      - name: q3_saran_utama_agar_terhindar_dari_hipertensi
+        description: "Question 3: What is the main advice given to pregnant women to avoid hypertension?"
+      - name: q4_tindakan_tekanan_sistolik_tinggi
+        description: "Question 4: Response captured for a pregnant participant with high systolic blood pressure."
+      - name: q5_tindakan_tekanan_darah_atas_140
+        description: "Question 5: Response captured for a pregnant participant with blood pressure above 140."
+      - name: q6_tindakan_tekanan_darah_atas_120
+        description: "Question 6: Response captured for a pregnant participant with blood pressure above 120."
+      - name: q7_kriteria_risiko_darah_tinggi
+        description: "Question 7: When is a pregnant woman considered at risk of high blood pressure?"
+      - name: q8_risiko_ibu_hamil_kek
+        description: "Question 8: What risks can occur when a pregnant woman experiences chronic energy deficiency (KEK)?"
+      - name: q9_cara_memantau_tekanan_darah
+        description: "Question 9: How do you monitor blood pressure?"
+      - name: q10_menjaga_tekanan_darah_ibu
+        description: "Question 10: What should be done to keep a pregnant woman's blood pressure healthy?"
+      - name: q11_frekuensi_pemeriksaan_kehamilan_di_fasilitas_kesehatan
+        description: "Question 11: How many times should a mother have pregnancy checkups at a health facility?"
+      - name: q12_monitoring_ibu_hamil_hipertensi
+        description: "Question 12: What monitoring is needed for pregnant women targeted for hypertension support?"
+      - name: q13_sasaran_dampingan_baduta
+        description: "Question 13: Which children under two are targeted for the support program?"
+      - name: q14_alasan_memantau_perlambatan_berat_badan
+        description: "Question 14: Why must slowed weight gain be monitored?"
+      - name: q15_sasaran_dampingan_perlambatan_pertumbuhan
+        description: "Question 15: In the case management program, who should receive support for growth slowing?"
+      - name: q16_penyuluhan_saat_kenaikan_bb_tidak_sesuai_kbm
+        description: "Question 16: If a child's weight gain is not aligned with KBM, what counseling should be given?"
+      - name: q17_penyuluhan_utama_saat_kenaikan_bb_tidak_sesuai_kbm
+        description: "Question 17: If weight gain is not aligned with KBM, what is the main counseling topic?"
+      - name: q18_pertambahan_panjang_badan_tahun_pertama
+        description: "Question 18: What length gain is expected during the first year after birth?"
+      - name: q19_cara_memantau_pertumbuhan_balita
+        description: "Question 19: How can toddler growth be monitored?"
+      - name: q20_monitoring_baduta_perlambatan_pertumbuhan
+        description: "Question 20: What monitoring is needed for children under two with growth slowing?"
+      - name: training_strengths
+        description: Post-training feedback on what went well in the training session. Null for `pre` rows.
+      - name: training_satisfaction
+        description: Post-training satisfaction feedback for the training session. Null for `pre` rows.
+      - name: training_improvements
+        description: Post-training feedback on improvements needed for future sessions. Null for `pre` rows.
+      - name: confidence_to_apply_knowledge_or_skills
+        description: Post-training self-reported confidence to apply the knowledge or skills from the training. Null for `pre` rows.
+  - name: 09b_eng_stg
+    description: English column-name projection of `09b_stg`. Raw response values are preserved as captured; only the field names and documentation are translated into English.
+    columns:
+      - name: survey_stage
+        description: Survey stage indicator carried from `09b_stg.pre_post`. `pre` comes from `raw_sheets.09b_pre` and `post` comes from `raw_sheets.09b_post`.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: national_id_number
+        description: Indonesian national identity number (NIK) captured in the raw sheet.
+      - name: respondent_name
+        description: Respondent name captured in the raw sheet.
+      - name: respondent_age
+        description: Respondent age parsed as a numeric value from the raw sheet.
+      - name: score
+        description: Achieved score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: max_score
+        description: Maximum possible score parsed as a numeric value from the raw `Score` field in `x / y` format.
+      - name: gender
+        description: Gender captured in the raw sheet.
+      - name: highest_education_level
+        description: Highest completed education level captured in the raw sheet.
+      - name: whatsapp_phone_number
+        description: WhatsApp phone number captured in the raw sheet.
+      - name: province
+        description: Province captured in the raw sheet.
+      - name: regency_or_city
+        description: Regency or city captured in the raw sheet.
+      - name: district
+        description: District captured in the raw sheet.
+      - name: village
+        description: Village captured in the raw sheet.
+      - name: supervising_primary_health_center_name
+        description: Supervising puskesmas or primary health center captured in the raw sheet.
+      - name: assisted_integrated_health_post_name
+        description: Name of the assisted or supervised posyandu captured in the raw sheet.
+      - name: response_timestamp
+        description: Timestamp recorded in the raw sheet as text.
+      - name: q1_target_pregnant_women_for_case_management_support
+        description: "Question 1: Which pregnant women are targeted for the case management support program?"
+      - name: q2_reason_to_monitor_pregnancy_blood_pressure
+        description: "Question 2: Why should a pregnant woman's blood pressure be monitored?"
+      - name: q3_main_advice_to_prevent_hypertension_in_pregnancy
+        description: "Question 3: What is the main advice given to pregnant women to avoid hypertension?"
+      - name: q4_action_for_high_systolic_blood_pressure
+        description: "Question 4: Response captured for a pregnant participant with high systolic blood pressure."
+      - name: q5_action_for_blood_pressure_above_140
+        description: "Question 5: Response captured for a pregnant participant with blood pressure above 140."
+      - name: q6_action_for_blood_pressure_above_120
+        description: "Question 6: Response captured for a pregnant participant with blood pressure above 120."
+      - name: q7_high_blood_pressure_risk_definition
+        description: "Question 7: When is a pregnant woman considered at risk of high blood pressure?"
+      - name: q8_risks_of_maternal_chronic_energy_deficiency
+        description: "Question 8: What risks can occur when a pregnant woman experiences chronic energy deficiency (KEK)?"
+      - name: q9_how_to_monitor_blood_pressure
+        description: "Question 9: How do you monitor blood pressure?"
+      - name: q10_how_to_keep_maternal_blood_pressure_healthy
+        description: "Question 10: What should be done to keep a pregnant woman's blood pressure healthy?"
+      - name: q11_frequency_of_pregnancy_checkups_at_health_facilities
+        description: "Question 11: How many times should a mother have pregnancy checkups at a health facility?"
+      - name: q12_monitoring_for_pregnant_women_with_hypertension
+        description: "Question 12: What monitoring is needed for pregnant women targeted for hypertension support?"
+      - name: q13_target_children_under_two_for_support
+        description: "Question 13: Which children under two are targeted for the support program?"
+      - name: q14_why_slowed_weight_gain_must_be_monitored
+        description: "Question 14: Why must slowed weight gain be monitored?"
+      - name: q15_target_for_growth_slowing_support
+        description: "Question 15: In the case management program, who should receive support for growth slowing?"
+      - name: q16_counseling_when_weight_gain_is_off_kbm
+        description: "Question 16: If a child's weight gain is not aligned with KBM, what counseling should be given?"
+      - name: q17_main_counseling_when_weight_gain_is_off_kbm
+        description: "Question 17: If weight gain is not aligned with KBM, what is the main counseling topic?"
+      - name: q18_length_gain_in_first_year_after_birth
+        description: "Question 18: What length gain is expected during the first year after birth?"
+      - name: q19_how_to_monitor_toddler_growth
+        description: "Question 19: How can toddler growth be monitored?"
+      - name: q20_monitoring_for_children_with_growth_slowing
+        description: "Question 20: What monitoring is needed for children under two with growth slowing?"
+      - name: what_went_well_in_training
+        description: Post-training feedback on what went well in the training session. Null for `pre` rows.
+      - name: training_satisfaction
+        description: Post-training satisfaction feedback for the training session. Null for `pre` rows.
+      - name: training_improvements_needed
+        description: Post-training feedback on improvements needed for future sessions. Null for `pre` rows.
+      - name: confidence_to_apply_knowledge_or_skills
+        description: Post-training self-reported confidence to apply the knowledge or skills from the training. Null for `pre` rows.
   - name: asesmen_fungsionalitas_kader_CHW_AIM
     description: Flattened staging model for the Asesmen Fungsionalitas Kader CHW AIM Kobo submission data from `raw_kobo.ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM`.
     columns:
@@ -11,21 +387,14 @@ models:
           - unique
       - name: submission_start_at
         description: Timestamp when the form session started.
-        tests:
-          - not_null
       - name: submission_end_at
         description: Timestamp when the form session ended.
-        tests:
-          - not_null
       - name: submission_time
         description: Timestamp when the submission was received by Kobo.
         tests:
           - not_null
       - name: submission_uuid
         description: Kobo submission UUID from `_uuid`.
-        tests:
-          - not_null
-          - unique
       - name: submission_status
         description: Submission status from Kobo, such as `submitted_via_web`.
       - name: submission_version
@@ -94,5 +463,118 @@ models:
         description: Score captured for komponen asesmen Data.
       - name: komponen_asesmen_sistem_kesehatan
         description: Score captured for komponen asesmen Sistem Kesehatan.
+      - name: raw_record
+        description: Original JSON submission payload retained for traceability.
+  - name: asesmen_monitoring_posyandu
+    description: Flattened staging model for the Monitoring Posyandu Kobo submission data from `raw_kobo.ACTIVEMonitoring_Posyandu`.
+    columns:
+      - name: submission_id
+        description: Kobo submission identifier from `_id`.
+        tests:
+          - not_null
+          - unique
+      - name: submission_start_at
+        description: Timestamp when the form session started.
+        tests:
+          - not_null
+      - name: submission_end_at
+        description: Timestamp when the form session ended.
+        tests:
+          - not_null
+      - name: submission_time
+        description: Timestamp when the submission was received by Kobo.
+        tests:
+          - not_null
+      - name: submission_uuid
+        description: Kobo submission UUID from `_uuid`.
+        tests:
+          - not_null
+          - unique
+      - name: submission_status
+        description: Submission status from Kobo, such as `submitted_via_web`.
+      - name: submission_version
+        description: Kobo form version identifier from `__version__`.
+      - name: submitted_by
+        description: User who submitted the form, when Kobo captured it.
+      - name: xform_id_string
+        description: Kobo xForm identifier string.
+      - name: formhub_uuid
+        description: Formhub UUID stored in the raw submission payload.
+      - name: meta_root_uuid
+        description: Root UUID from the Kobo metadata block.
+      - name: meta_instance_id
+        description: Instance identifier from the Kobo metadata block.
+      - name: meta_deprecated_id
+        description: Deprecated instance identifier from the Kobo metadata block.
+      - name: validation_status
+        description: Validation status object returned by Kobo.
+      - name: tags
+        description: Array of Kobo submission tags.
+      - name: notes
+        description: Array of Kobo submission notes.
+      - name: attachments
+        description: Array of attachment metadata for the submission.
+      - name: geolocation
+        description: Raw geolocation array from Kobo.
+      - name: geolocation_latitude
+        description: Latitude parsed from the first geolocation array position.
+      - name: geolocation_longitude
+        description: Longitude parsed from the second geolocation array position.
+      - name: pembukaan_posyandu
+        description: Posyandu code captured in the pembukaan section.
+      - name: pembukaan_provinsi_kode
+        description: Province code captured in the pembukaan section.
+      - name: pembukaan_provinsi
+        description: Province label joined from the active Kobo province reference list.
+      - name: pembukaan_kota_kabupaten_kode
+        description: City or regency code captured in the pembukaan section.
+      - name: pembukaan_kota_kabupaten
+        description: City or regency label joined from the active Kobo kabupaten reference list.
+      - name: pembukaan_kecamatan_kode
+        description: District code captured in the pembukaan section.
+      - name: pembukaan_kecamatan
+        description: District label joined from the active Kobo kecamatan reference list.
+      - name: pembukaan_desa_kelurahan_kode
+        description: Village or ward code captured in the pembukaan section.
+      - name: pembukaan_desa_kelurahan
+        description: Village or ward label joined from the active Kobo desa reference list.
+      - name: pembukaan_puskesmas_kode
+        description: Puskesmas code captured in the pembukaan section.
+      - name: pembukaan_puskesmas
+        description: Puskesmas label joined from the active Kobo puskesmas reference list.
+      - name: pembukaan_enumerator_peran
+        description: Enumerator role recorded in the pembukaan section.
+      - name: pembukaan_enumerator_nama_lain
+        description: Free-text enumerator name recorded in the pembukaan section.
+      - name: pembukaan_kunjungan_tanggal
+        description: Visit date recorded in the pembukaan section.
+        tests:
+          - not_null
+      - name: langkah_1_1_kader_menyediakan_kartu_nomor_antrian
+        description: Response captured for langkah posyandu 1.1.
+      - name: langkah_1_2_kader_mendata_sasaran_lembar_registrasi
+        description: Response captured for langkah posyandu 1.2.
+      - name: langkah_2_1_kader_mempersiapkan_alat_ukur_tinggi_badan
+        description: Response captured for langkah posyandu 2.1.
+      - name: langkah_2_2_kader_pengukuran_tinggi_badan_berat_badan
+        description: Response captured for langkah posyandu 2.2.
+      - name: langkah_3_1_kader_penitikan_plotting_buku_kia
+        description: Response captured for langkah posyandu 3.1.
+      - name: langkah_3_2_pengisian_grafik_kms_buku_kia
+        description: Response captured for langkah posyandu 3.2.
+      - name: langkah_3_3_pengisian_grafik_pb_tb_u_buku_kia
+        description: Response captured for langkah posyandu 3.3.
+      - name: langkah_4_1_nakes_kader_bekerja_sama_melayani_sasaran
+        description: Response captured for langkah posyandu 4.1.
+      - name: langkah_5_1_kader_menyampaikan_penyuluhan_kepada_sasaran
+        description: Response captured for langkah posyandu 5.1.
+      - name: langkah_5_2_kader_menyampaikan_poin_penyuluhan_sesuai_sasaran
+        description: Response captured for langkah posyandu 5.2.
+      - name: langkah_5_3_kader_percaya_diri_memberikan_penyuluhan
+        description: Response captured for langkah posyandu 5.3.
+      - name: langkah_evaluasi_dilakukan_akhir_posyandu
+        description: Overall evaluation captured in langkah posyandu.
+      - name: penutup_catatan
+        description: Free-text closing note captured in the penutup section.
       - name: raw_record
         description: Original JSON submission payload retained for traceability.

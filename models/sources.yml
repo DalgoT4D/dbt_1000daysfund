@@ -8,3 +8,20 @@ sources:
     tables:
       - name: ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM
         identifier: ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM
+      - name: ACTIVEMonitoring_Posyandu
+        identifier: ACTIVEMonitoring_Posyandu
+  
+  
+  - name: raw_sheets
+    schema: raw_sheets
+    quoting:
+      identifier: true
+    tables:
+      - name: '09a_pre'
+        identifier: '09a_pre'
+      - name: '09a_post'
+        identifier: '09a_post'
+      - name: '09b_pre'
+        identifier: '09b_pre'
+      - name: '09b_post'
+        identifier: '09b_post'
