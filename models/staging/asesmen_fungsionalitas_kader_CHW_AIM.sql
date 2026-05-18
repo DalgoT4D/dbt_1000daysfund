@@ -6,9 +6,8 @@ with source_data as (
         case when data is null or trim(data::text) = '' then null::jsonb else data::jsonb end as json_payload
     from {{ source("raw_kobo", "ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM") }}
 
-),
+)
 
-final as (
 
     select
         nullif(json_payload ->> '_id', '')::bigint                                          as submission_id,
@@ -42,8 +41,3 @@ final as (
     left join reference.kobo_list_desa_active      ref_desa  on ref_desa.name  = nullif(json_payload ->> 'pembukaan/desa_kelurahan', '')
     left join reference.kobo_list_puskesmas_active ref_pkm   on ref_pkm.name   = nullif(json_payload ->> 'pembukaan/puskesmas', '')
     left join reference.tdf_team_jan26             ref_enum  on ref_enum.name  = nullif(json_payload ->> 'pembukaan/enumerator_nama', '')
-
-)
-
-select *
-from final

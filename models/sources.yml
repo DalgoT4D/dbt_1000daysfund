@@ -25,3 +25,7 @@ sources:
         identifier: '09b_pre'
       - name: '09b_post'
         identifier: '09b_post'
+      - name: '10_pre'
+        identifier: '10_pre'
+      - name: '10_post'
+        identifier: '10_post'

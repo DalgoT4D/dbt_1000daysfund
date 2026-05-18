@@ -377,6 +377,8 @@ models:
         description: Post-training feedback on improvements needed for future sessions. Null for `pre` rows.
       - name: confidence_to_apply_knowledge_or_skills
         description: Post-training self-reported confidence to apply the knowledge or skills from the training. Null for `pre` rows.
+  - name: 10a_stg
+    description: Combined staging model for `raw_sheets.10_pre` and `raw_sheets.10_post` using `select *` with `union all`, preserving the raw source column names.
   - name: asesmen_fungsionalitas_kader_CHW_AIM
     description: Flattened staging model for the Asesmen Fungsionalitas Kader CHW AIM Kobo submission data from `raw_kobo.ACTIVEAsesmen_Fungsionalitas_Kader_CHW_AIM`.
     columns:

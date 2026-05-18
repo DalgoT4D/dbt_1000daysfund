@@ -1,7 +1,7 @@
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
-    quoting={'identifier': true}
+    quoting={'identifier': true},tags=["09a_stg", "staging"] 
 ) }}
 
 select
