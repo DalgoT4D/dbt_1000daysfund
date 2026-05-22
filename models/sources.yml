@@ -17,6 +17,18 @@ sources:
     quoting:
       identifier: true
     tables:
+      - name: '02_pre'
+        identifier: '02_pre'
+      - name: '02_post'
+        identifier: '02_post'
+      - name: '04_pre'
+        identifier: '04_pre'
+      - name: '04_post'
+        identifier: '04_post'
+      - name: '06_pre'
+        identifier: '06_pre'
+      - name: '06_post'
+        identifier: '06_post'
       - name: '09a_pre'
         identifier: '09a_pre'
       - name: '09a_post'
@@ -29,3 +41,7 @@ sources:
         identifier: '10_pre'
       - name: '10_post'
         identifier: '10_post'
+      - name: '12_pre'
+        identifier: '12_pre'
+      - name: '12_post'
+        identifier: '12_post'
