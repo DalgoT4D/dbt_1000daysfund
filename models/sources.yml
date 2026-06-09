@@ -41,3 +41,5 @@ sources:
         identifier: 'training_10_participants'
       - name: 'training_11_participants'
         identifier: 'training_11_participants'
+      - name: 'training_12_participants'
+        identifier: 'training_12_participants'

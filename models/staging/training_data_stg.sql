@@ -101,6 +101,14 @@ training_11 as (
     from {{ source('raw_sheets', 'training_11_participants') }}
 ),
 
+training_12 as (
+    select
+        'Kelompok Kerja'::text  as training_type,
+        '12'::text                   as training_code,
+        *
+    from {{ source('raw_sheets', 'training_11_participants') }}
+),
+
 combined as (
     select * from training_01
     union all select * from training_02
@@ -114,6 +122,7 @@ combined as (
     union all select * from training_09b
     union all select * from training_10
     union all select * from training_11
+    union all select * from training_12
 )
 
 select
