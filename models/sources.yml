@@ -17,6 +17,14 @@ sources:
     quoting:
       identifier: true
     tables:
+      - name: 'ka_modul_01'
+        identifier: 'ka_modul_01'
+      - name: 'ka_modul_02'
+        identifier: 'ka_modul_02'
+      - name: 'ka_modul_03'
+        identifier: 'ka_modul_03'
+      - name: 'ka_past_quarter'
+        identifier: 'ka_past_quarter'
       - name: 'training_01_participants'
         identifier: 'training_01_participants'
       - name: 'training_02_participants'
