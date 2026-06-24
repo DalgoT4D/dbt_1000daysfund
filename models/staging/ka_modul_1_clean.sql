@@ -2,7 +2,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["training_data_stg", "staging"]
+    tags=["training_data_stg", "staging", "ka"]
 ) }}
 
 with recursive source as (
@@ -42,7 +42,8 @@ parsed as (
 filtered_quarters as (
     select *
     from parsed
-    where quarter in ('2026-Q1', '2026-Q2')
+    -- where quarter in ('2026-Q1', '2026-Q2')
+    where date >= date '2026-01-01'
 ),
 
 
