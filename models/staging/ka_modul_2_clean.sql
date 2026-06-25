@@ -45,7 +45,7 @@ parsed as (
 filtered_dates as (
     select *
     from parsed p
-    where p.date >= date '2026-01-01'
+    where date >= date '2026-04-01'
 ),
 
 district_corrected as (

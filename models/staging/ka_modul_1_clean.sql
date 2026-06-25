@@ -43,7 +43,7 @@ filtered_quarters as (
     select *
     from parsed
     -- where quarter in ('2026-Q1', '2026-Q2')
-    where date >= date '2026-01-01'
+    where date >= date '2026-04-01'
 ),
 
 

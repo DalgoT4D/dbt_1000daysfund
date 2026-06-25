@@ -26,7 +26,7 @@ past_quarter_normalized as (
         nullif(trim("program"), '') as program
     from past_quarter_source
     -- where nullif(trim("quarter"), '') not in ('2026-Q1', '2026-Q2')
-    where cast(nullif(trim("date"), '') as date) < date '2026-01-01'
+    where cast(nullif(trim("date"), '') as date) < date '2026-04-01'
 ),
 
 past_quarter as (
