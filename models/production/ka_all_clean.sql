@@ -54,63 +54,6 @@ past_quarter as (
     from past_quarter_normalized
 ),
 
-current_modules_raw as (
-    select
-        email,
-        name,
-        unified_name,
-        role,
-        whatsapp,
-        district,
-        province,
-        puskesmas,
-        village,
-        cast(year as integer) as year,
-        quarter,
-        date,
-        score,
-        'modul_1' as modul
-    from {{ ref('ka_modul_1_clean') }}
-
-    union all
-
-    select
-        email,
-        name,
-        unified_name,
-        role,
-        whatsapp,
-        district,
-        province,
-        puskesmas,
-        village,
-        cast(year as integer) as year,
-        quarter,
-        date,
-        score,
-        'modul_2' as modul
-    from {{ ref('ka_modul_2_clean') }}
-
-    union all
-
-    select
-        email,
-        name,
-        unified_name,
-        role,
-        whatsapp,
-        district,
-        province,
-        puskesmas,
-        village,
-        cast(year as integer) as year,
-        quarter,
-        date,
-        score,
-        'modul_3' as modul
-    from {{ ref('ka_modul_3_clean') }}
-),
-
 current_modules as (
     select
         email,
@@ -133,7 +76,8 @@ current_modules as (
         end as is_certified,
         modul,
         cast(null as varchar) as program
-    from current_modules_raw
+    from {{ ref('ka_merge_int') }}
+    where is_latest_score
 )
 
 select *
