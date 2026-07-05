@@ -2,86 +2,37 @@ version: 3
 
 
 models:
-  - name: stg_training_participants
+  - name: training_12_forms_stg
     description: >
-      Unified staging model for paired pre/post participant records across all
-      training programs. One row per person per training (paired, pre-only, or
-      post-only), with scores normalized to integer percentages by the upstream
-      Colab pipeline. Sources are the `raw_sheets.training_*_participants`
-      tables, one per training cohort.
+      Staging table for cohort 12 that unions the raw `training_12_pre` and
+      `training_12_post` sheets into a single row-per-submission dataset. Each
+      row keeps its `pre` or `post` tag, normalizes the key profile fields, and
+      assigns a `unified_name` across both sheets before any deduplication.
     columns:
-      - name: training_type
+      - name: form_tag
         description: >
-          Human-readable training program name. Multiple training cohorts
-          (e.g. 05a + 05b, 09a + 09b) can share a training_type when they're
-          different rollouts of the same content.
-        tests:
-          - not_null
-          - accepted_values:
-              values:
-                - 'Pelatihan ASI'
-                - 'Growth Counseling'
-                - 'Fasilitasi Kelas Ibu'
-                - 'Stunting 101'
-                - 'Konseling Nutrisi'
-                - 'Manajemen Posyandu'
-                - 'Fasilitasi dan Komunikasi'
-                - 'ICCM'
-                - 'ASI-MPASI'
-                - 'Konseling Ibu Hamil'
-      - name: training_code
+          Source form tag for the submission: `pre` or `post`.
+      - name: nama_raw
         description: >
-          Short alphanumeric identifier for the specific training cohort
-          (e.g. '01', '05a', '09b'). Distinguishes rollouts that share a
-          training_type. Useful for matching back to the source sheets.
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['01', '02', '03', '04', '05a', '05b', '06', '07', '09a', '09b', '10', '11']
-      - name: year
-        description: Calendar year derived from the pre-test submission timestamp (falls back to post timestamp for post-only rows).
-      - name: quarter
-        description: Calendar quarter in `YYYY-QN` text format (e.g. `2025-Q1`).
-      - name: status
+          Raw submitted participant name from the source sheet.
+      - name: unified_name
         description: >
-          Pairing outcome from the upstream matching cascade.
-          `paired` — same person took both pre and post tests, identified by phone, NIK, name+location, or fuzzy name.
-          `pre_only` — took the pre-test only.
-          `post_only` — took the post-test only.
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['paired', 'pre_only', 'post_only']
+          Canonicalized participant name after cross-sheet name grouping.
+      - name: unified_name_key
+        description: >
+          Normalized join key derived from `unified_name`.
+      - name: score
+        description: >
+          Submission score normalized to an integer percentage when possible.
+      - name: phone_key
+        description: >
+          Digits-only WhatsApp key, normalized to a leading `0` form.
+      - name: nik_key
+        description: >
+          Digits-only NIK key when at least 10 digits were present.
       - name: peran_category
         description: >
-          Respondent role grouped into one of four categories:
-          `Health Worker` (bidan, perawat, TPG, etc.),
-          `Community Health Worker` (kader posyandu, KPM, etc.),
-          `Task Force` (TPK, PKK desa), or
-          `General` (program staff and uncategorized roles).
-          Categorization happens in the upstream Colab pipeline.
-      - name: provinsi
-        description: Province captured from the participant's form submission.
-      - name: kabupaten
-        description: Regency or city captured from the participant's form submission.
-      - name: pre_score
-        description: Pre-test score as an integer percentage (0-100). Null for `post_only` rows.
-      - name: post_score
-        description: Post-test score as an integer percentage (0-100). Null for `pre_only` rows.
-      - name: delta
-        description: >
-          `post_score - pre_score` in percentage points. Positive means improvement,
-          negative means decline. Null for `pre_only` and `post_only` rows.
-      - name: outcome
-        description: >
-          Categorical outcome flag derived from `delta`:
-          `Improved` (delta > 0), `Same` (delta = 0), `Declined` (delta < 0).
-          Null for `pre_only` and `post_only` rows.
-        tests:
-          - accepted_values:
-              values: ['Improved', 'Same', 'Declined']
-              config:
-                where: "status = 'paired'"
+          Broad role bucket derived from the raw `Peran` response.
 
   - name: asesmen_monitoring_posyandu
     description: Flattened staging model for the Monitoring Posyandu Kobo submission data from `raw_kobo.ACTIVEMonitoring_Posyandu`.

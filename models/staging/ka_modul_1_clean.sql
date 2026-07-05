@@ -9,8 +9,11 @@ with source as (
     select * from {{ source('raw_sheets', 'ka_modul_01') }}
 ),
 
-district_typos as (
-    select typo, district from {{ ref('district_typos') }}
+district_lookup as (
+    select
+        typo_key,
+        district
+    from {{ ref('ka_district_lookup_int') }}
 ),
 
 parsed as (
@@ -18,10 +21,11 @@ parsed as (
         cast("Timestamp" as timestamp) as timestamp_raw,
         cast(cast("Timestamp" as timestamp) as date) as date,
         extract(year from cast("Timestamp" as timestamp)) as year,
-        concat(cast(extract(year from cast("Timestamp" as timestamp)) as varchar),
-                '-Q',
-                cast(extract(quarter from cast("Timestamp" as timestamp)) as varchar)
-            ) as quarter,
+        concat(
+            cast(extract(year from cast("Timestamp" as timestamp)) as varchar),
+            '-Q',
+            cast(extract(quarter from cast("Timestamp" as timestamp)) as varchar)
+        ) as quarter,
         "Nama" as name,
         {{ normalize_unicode('"Nama"') }} as clean_name,
         lower(trim("Email_Address")) as email,
@@ -35,22 +39,22 @@ parsed as (
             (
                 cast(trim(split_part("Score", '/', 1)) as numeric)
                 / nullif(cast(trim(split_part("Score", '/', 2)) as numeric), 0)
-            ) * 100,2) as score
+            ) * 100,
+            2
+        ) as score
     from source
 ),
 
 filtered_quarters as (
     select *
     from parsed
-    -- where quarter in ('2026-Q1', '2026-Q2')
     where date >= date '2026-04-01'
 ),
-
 
 district_corrected as (
     select
         p.*,
-        coalesce(nullif(dt.district, ''), p.district_raw) as district,
+        coalesce(dl.district, p.district_raw) as district,
         case
             when lower(coalesce(p.role_raw, '')) = 'nakes' then 'Health Worker'
             when lower(coalesce(p.role_raw, '')) ~ 'bidan' then 'Health Worker'
@@ -62,7 +66,8 @@ district_corrected as (
             else 'Public'
         end as role
     from filtered_quarters p
-    left join district_typos dt on p.district_raw = lower(trim(dt.typo))
+    left join district_lookup dl
+        on p.district_raw = dl.typo_key
 )
 
 select
@@ -71,6 +76,7 @@ select
     clean_name,
     role,
     whatsapp,
+    district_raw as district_original,
     district,
     province,
     puskesmas,

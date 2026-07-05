@@ -9,8 +9,11 @@ with source as (
     select * from {{ source('raw_sheets', 'ka_modul_02') }}
 ),
 
-district_typos as (
-    select typo, district from {{ ref('district_typos') }}
+district_lookup as (
+    select
+        typo_key,
+        district
+    from {{ ref('ka_district_lookup_int') }}
 ),
 
 parsed as (
@@ -51,7 +54,7 @@ filtered_dates as (
 district_corrected as (
     select
         p.*,
-        coalesce(nullif(dt.district, ''), p.district_raw) as district,
+        coalesce(dl.district, p.district_raw) as district,
         case
             when lower(coalesce(p.role_raw, '')) = 'tenaga kesehatan' then 'Health Worker'
             when lower(coalesce(p.role_raw, '')) = 'kader posyandu' then 'Community Health Worker'
@@ -59,8 +62,8 @@ district_corrected as (
             else 'Public'
         end as role
     from filtered_dates p
-    left join district_typos dt
-        on p.district_raw = lower(trim(dt.typo))
+    left join district_lookup dl
+        on p.district_raw = dl.typo_key
 )
 
 select
@@ -69,6 +72,7 @@ select
     clean_name,
     role,
     whatsapp,
+    district_raw as district_original,
     district,
     province,
     puskesmas,

@@ -1,0 +1,115 @@
+version: 3
+
+models:
+  - name: ka_district_lookup_int
+    description: >
+      Intermediate lookup table for district normalization across KA modules 1,
+      2, and 3. It combines the existing `reference.district_typos` mappings
+      with conservative fuzzy-match suggestions derived from raw sheet district
+      values and the canonical district list in `reference."Kabupatenkota"`.
+      The model output is used downstream for district cleanup, and its
+      post-hooks update blank or missing rows in `reference.district_typos`.
+    columns:
+      - name: typo_key
+        description: >
+          Normalized lowercase join key for the raw district value. Downstream
+          module models join their normalized district text to this field.
+      - name: typo
+        description: >
+          Original district text captured from the source sheet before
+          standardization.
+      - name: district
+        description: >
+          Standardized district name selected from the reference typo table or
+          matched from `reference."Kabupatenkota"`.
+      - name: mapping_source
+        description: >
+          Indicates whether the mapping came from the existing reference typo
+          table (`reference`) or was newly proposed by the fuzzy matching logic
+          (`suggested`).
+      - name: match_method
+        description: >
+          Matching rule that produced the mapped district, such as exact key
+          matches, stripped-prefix matches, containment matches, similarity
+          matches, or `reference` for existing mappings.
+      - name: observation_count
+        description: >
+          Number of source rows across KA modules 1, 2, and 3 that produced the
+          raw district value. Null for mappings that already existed in the
+          reference typo table.
+      - name: similarity_score
+        description: >
+          Fuzzy similarity score used when evaluating suggested mappings. Null
+          for mappings that came directly from the reference typo table.
+  - name: profile_fct
+    description: >
+      One-row-per-person profile table for KA participants. From April 1, 2026
+      onward, it reuses the unified-name logic from `ka_merge_int`; for earlier
+      history from `raw_sheets.ka_past_quarter`, it keeps the original name and
+      profile fields. The output also aggregates distinct Q2+ raw name variants
+      into a pipe-separated list.
+    columns:
+      - name: person_id
+        description: >
+          Stable person identifier used for KA matching outputs. It uses the
+          profile email when available and appends a cluster suffix such as
+          `_c0` or `_c1` so multiple distinct people can still be represented
+          under the same email.
+      - name: name
+        description: >
+          Canonical profile name. Uses the Q2 2026+ unified name when present;
+          otherwise falls back to the latest available raw name from earlier
+          profile history.
+      - name: email
+        description: >
+          Most recent non-null email address observed for the profile.
+      - name: whatsapp
+        description: >
+          Most recent non-null WhatsApp number observed for the profile.
+      - name: role
+        description: >
+          Most recent non-null role observed for the profile.
+      - name: district
+        description: >
+          Most recent non-null district observed for the profile.
+      - name: name_variants
+        description: >
+          Pipe-separated list of distinct raw names seen for the profile in Q2
+          2026 and later module submissions.
+  - name: training_12_participants_int
+    description: >
+      Final paired participant output for cohort 12. It starts from
+      `training_12_forms_stg`, deduplicates rows separately within `pre` and
+      `post`, then matches the two sides by phone, NIK, unified
+      name+desa+puskesmas, unified name+puskesmas, and unified name only.
+    columns:
+      - name: status
+        description: >
+          Pairing result for the participant row: `paired`, `pre_only`, or `post_only`.
+      - name: match_tier
+        description: >
+          Exact-match rule that paired the pre and post row. Null for unpaired rows.
+      - name: match_score
+        description: >
+          Match confidence score. Exact-match tiers are always `100`.
+      - name: nama
+        description: >
+          Canonical participant name, preferring the unified name created upstream.
+      - name: nama_pre
+        description: >
+          Raw pre-test name when a pre row exists.
+      - name: nama_post
+        description: >
+          Raw post-test name when a post row exists.
+      - name: pre_score
+        description: >
+          Pre-test score as an integer percentage. Null for `post_only` rows.
+      - name: post_score
+        description: >
+          Post-test score as an integer percentage. Null for `pre_only` rows.
+      - name: delta
+        description: >
+          `post_score - pre_score` for paired rows.
+      - name: outcome
+        description: >
+          Outcome label derived from `delta` for paired rows.

@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: ka_matching
+    description: >
+      Production-facing KA matching table at the person-by-quarter-by-module
+      grain for Q2 2026 onward only. It is sourced from `ka_all_clean`,
+      carries the raw submitted name, and adds `canonical_name` plus
+      `person_id` from `profile_fct`.
+    columns:
+      - name: year
+        description: Calendar year of the record.
+      - name: quarter
+        description: Quarter label associated with the record.
+      - name: date
+        description: Submission or assessment date for the record.
+      - name: name
+        description: Raw submitted participant name for the record.
+      - name: email
+        description: Normalized email address captured for the participant.
+      - name: age
+        description: Participant age when available. Currently null because the field is not yet modeled upstream.
+      - name: education
+        description: Participant education when available. Currently null because the field is not yet modeled upstream.
+      - name: program
+        description: Program field carried from `ka_all_clean`. It is currently null for Q2 2026+ KA module rows.
+      - name: role
+        description: Participant role for the given record.
+      - name: village
+        description: Village associated with the record.
+      - name: is_certified
+        description: Certification flag derived from score thresholds used elsewhere in the KA production models.
+      - name: district
+        description: Standardized district associated with the record.
+      - name: modul
+        description: KA module identifier for the record.
+      - name: whatsapp
+        description: Raw WhatsApp number captured for the participant.
+      - name: puskesmas
+        description: Puskesmas associated with the record.
+      - name: is_latest
+        description: Always `true` in this Q2 2026+ model because `ka_all_clean` already keeps the latest row for each participant grouping within the quarter and module.
+      - name: score
+        description: Rounded score percentage for the record.
+      - name: person_id
+        description: Stable person identifier from `profile_fct`, using an email-based cluster suffix such as `_c0`.
+      - name: canonical_name
+        description: Canonical participant name, using the unified name from the Q2 2026+ matching logic.
