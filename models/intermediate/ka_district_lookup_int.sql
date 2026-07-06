@@ -1,15 +1,4 @@
 {% set district_source_tables = ['ka_modul_01', 'ka_modul_02', 'ka_modul_03'] %}
-{% set district_prefix_regex = '^(kabupaten|kab[[:punct:]]?|kota administrasi|kotamadya|kota)[[:space:]]+' %}
-{% set kota_regex = '(^|[[:space:]])kota([[:space:]]|$)|kotamadya|kota administrasi' %}
-{% set kabupaten_regex = '(^|[[:space:]])kabupaten([[:space:]]|$)|(^|[[:space:]])kab[[:punct:]]?([[:space:]]|$)' %}
-
-{% macro ka_district_key(column_name, strip_prefix=False) -%}
-trim(regexp_replace(regexp_replace({% if strip_prefix %}regexp_replace({{ normalize_unicode(column_name) }}, '{{ district_prefix_regex }}', ''){% else %}{{ normalize_unicode(column_name) }}{% endif %}, '[^a-z0-9]+', ' ', 'g'), '[[:space:]]+', ' ', 'g'))
-{%- endmacro %}
-
-{% macro ka_district_type_hint(column_name) -%}
-case when {{ column_name }} ~ '{{ kota_regex }}' then 'kota' when {{ column_name }} ~ '{{ kabupaten_regex }}' then 'kabupaten' else null end
-{%- endmacro %}
 
 {% set existing_typos_ctes %}
 existing_typos_raw as (
