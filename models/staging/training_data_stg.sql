@@ -106,7 +106,7 @@ training_12 as (
         'Kelompok Kerja'::text  as training_type,
         '12'::text                   as training_code,
         *
-    from {{ source('raw_sheets', 'training_11_participants') }}
+    from {{ source('raw_sheets', 'training_12_participants') }}
 ),
 
 combined as (
@@ -131,10 +131,14 @@ select
 
     nullif(btrim("year"), '')::int            as year,
     nullif(btrim("quarter"), '')              as quarter,
+    nullif(btrim("date"), '')::date           as date,
     nullif(btrim("status"), '')               as status,
+    nullif(btrim("nama"), '')                 as name,
     nullif(btrim("peran_category"), '')       as peran_category,
-    nullif(btrim("provinsi"), '')             as provinsi,
-    nullif(btrim("kabupaten"), '')            as kabupaten,
+    nullif(btrim("provinsi"), '')             as province,
+    nullif(btrim("kabupaten"), '')            as district,
+    nullif(btrim("kecamatan"), '')            as subdistrict,
+    nullif(btrim("desa"), '')                 as village,
     nullif(btrim("pre_score"), '')::numeric   as pre_score,
     nullif(btrim("post_score"), '')::numeric  as post_score,
     nullif(btrim("delta"), '')::numeric       as delta,

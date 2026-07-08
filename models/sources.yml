@@ -43,3 +43,7 @@ sources:
         identifier: 'training_11_participants'
       - name: 'training_12_participants'
         identifier: 'training_12_participants'
+      - name: 'register_posyandu_baduta'
+        identifier: 'register_posyandu_baduta'
+      - name: 'register_posyandu_bumil'
+        identifier: 'register_posyandu_bumil'
