@@ -53,3 +53,7 @@ sources:
         identifier: 'training_12_pre'
       - name: 'training_12_post'
         identifier: 'training_12_post'
+      - name: 'register_posyandu_baduta'
+        identifier: 'register_posyandu_baduta'
+      - name: 'register_posyandu_bumil'
+        identifier: 'register_posyandu_bumil'
