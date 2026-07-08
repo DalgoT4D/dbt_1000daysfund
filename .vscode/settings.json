@@ -1,4 +1,5 @@
 {
     "vscode-pets.disableEffects": false,
-    "vscode-pets.theme": "autumn"
+    "vscode-pets.theme": "autumn",
+    "dbt.dbtPythonPathOverride": "/Users/anusha/work/dbt_1000daysfund/.venv/bin/python3"
 }

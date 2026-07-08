@@ -49,6 +49,8 @@ sources:
         identifier: 'training_10_participants'
       - name: 'training_11_participants'
         identifier: 'training_11_participants'
+      - name: 'training_12_participants'
+        identifier: 'training_12_participants'
       - name: 'training_12_pre'
         identifier: 'training_12_pre'
       - name: 'training_12_post'
@@ -57,3 +59,13 @@ sources:
         identifier: 'register_posyandu_baduta'
       - name: 'register_posyandu_bumil'
         identifier: 'register_posyandu_bumil'
+
+  - name: reference
+    schema: reference
+    quoting:
+      identifier: true
+    tables:
+      - name: 'who_wfa'
+        identifier: 'who_wfa'
+      - name: 'who_lhfa'
+        identifier: 'who_lhfa'
