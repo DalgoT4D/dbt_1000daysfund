@@ -108,6 +108,35 @@ zscored as (
         when z_hfa_raw < -3 then -3 + (baduta_tinggi_badan - hfa_sd3neg) / (hfa_sd2neg - hfa_sd3neg) 
         else z_hfa_raw end, 2) as z_hfa
     from zscore_inputs z
+),
+
+-- flagged: derive boolean z-score and age-based feeding flags for reporting.
+flagged as (
+    select
+        z.*,
+        case
+            when z_wfa is null then null
+            when z_wfa <= -2 then true
+            else false
+        end as baduta_waz_check,
+        case
+            when z_hfa is null then null
+            when z_hfa <= -2 then true
+            else false
+        end as baduta_haz_check,
+        case
+            when baduta_usia_bulan is null then null
+            when baduta_usia_bulan < 6 then
+                baduta_asi_biner = 'TRUE' and baduta_mpasi_biner = 'FALSE'
+            else null
+        end as baduta_asi_check,
+        case
+            when baduta_usia_bulan is null then null
+            when baduta_usia_bulan >= 6 then
+                baduta_protein_biner = 'TRUE'
+            else null
+        end as baduta_protein_check
+    from zscored z
 )
 
 -- terminal select: expose the business-facing columns only, keeping helper
@@ -129,6 +158,11 @@ select
     baduta_tinggi_badan,
     kr_jumlah, 
     catatan,
-    z_wfa, 
-    z_hfa
-from zscored
+    z_wfa as baduta_waz, 
+    z_hfa as baduta_haz,
+    baduta_waz_check,
+    baduta_haz_check,
+    baduta_asi_check,
+    baduta_protein_check,
+    null as baduta_wf_check -- if a child hasnt been weighed in 3 months
+from flagged
