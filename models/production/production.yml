@@ -1,6 +1,43 @@
 version: 2
 
 models:
+  - name: ka_all_clean
+    description: >
+      Production KA history combining pre-Q2 2026 records with the latest
+      submission for each participant, quarter, and module from Q2 2026 onward.
+    columns:
+      - name: date
+        description: Submission or assessment date for the record.
+        tests:
+          # Every production row needs a date so the historical/current split is reliable.
+          - not_null
+      - name: quarter
+        description: Quarter label associated with the record.
+        tests:
+          # Quarter is part of the model's declared participant-quarter-module grain.
+          - not_null
+      - name: modul
+        description: KA module identifier for the record.
+        tests:
+          # Module is required to distinguish a participant's separate assessments.
+          - not_null
+      - name: score
+        description: Rounded score percentage for the record.
+        tests:
+          # Scores are percentages; nulls remain allowed when no score was submitted.
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: is_certified
+        description: Certification flag derived from the score threshold.
+        tests:
+          # The model deliberately emits text flags for historical compatibility.
+          - accepted_values:
+              arguments:
+                values: ['TRUE', 'FALSE']
+                quote: true
+
   - name: ka_matching
     description: >
       Production-facing KA matching table at the person-by-quarter-by-module
@@ -12,8 +49,14 @@ models:
         description: Calendar year of the record.
       - name: quarter
         description: Quarter label associated with the record.
+        tests:
+          # Quarter is required because it participates in the model's declared grain.
+          - not_null
       - name: date
         description: Submission or assessment date for the record.
+        tests:
+          # Matching only exposes Q2 2026+ records, all of which must be dateable.
+          - not_null
       - name: name
         description: Raw submitted participant name for the record.
       - name: email
@@ -34,15 +77,47 @@ models:
         description: Standardized district associated with the record.
       - name: modul
         description: KA module identifier for the record.
+        tests:
+          # Module is required because it participates in the model's declared grain.
+          - not_null
       - name: whatsapp
         description: Raw WhatsApp number captured for the participant.
       - name: puskesmas
         description: Puskesmas associated with the record.
       - name: is_latest
         description: Always `true` in this Q2 2026+ model because `ka_all_clean` already keeps the latest row for each participant grouping within the quarter and module.
+        tests:
+          # A false value would mean an older submission leaked into this table.
+          - accepted_values:
+              arguments:
+                values: [true]
+                quote: false
       - name: score
         description: Rounded score percentage for the record.
+        tests:
+          # Scores are percentages; nulls remain allowed when no score was submitted.
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
       - name: person_id
         description: Stable person identifier from `profile_fct`, using an email-based cluster suffix such as `_c0`.
+        tests:
+          # Downstream consumers use person_id as the durable participant key.
+          - not_null
       - name: canonical_name
         description: Canonical participant name, using the unified name from the Q2 2026+ matching logic.
+
+    tests:
+      # Enforce the documented one-row-per-person-per-quarter-per-module grain.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - person_id
+              - quarter
+              - modul
+
+      # Historical rows belong in ka_all_clean, not in the matching output.
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "date >= date '2026-04-01'"

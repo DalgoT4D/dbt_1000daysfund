@@ -2,6 +2,20 @@ version: 3
 
 
 models:
+  - name: register_posyandu_bumil_stg
+    description: Staging model for pregnant-mother Posyandu registration data.
+    columns:
+      - name: ibu_usia
+        description: Mother's age in completed years.
+        tests:
+          # Null remains allowed when age was not submitted; populated ages must
+          # be positive and strictly below the program's 40-year threshold.
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 40
+                strictly: true
+
   - name: training_12_forms_stg
     description: >
       Staging table for cohort 12 that unions the raw `training_12_pre` and
