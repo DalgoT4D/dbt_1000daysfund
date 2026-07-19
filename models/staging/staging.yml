@@ -2,6 +2,122 @@ version: 3
 
 
 models:
+  - name: training_14_forms
+    description: >
+      Canonical union of cohort 14 Forms and Sheets submissions, aligned with
+      the common cohort 12 and 13 participant and assessment columns.
+    columns:
+      - name: record_id
+        tests: [not_null, unique]
+      - name: response_source
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['forms', 'sheets']
+      - name: form_tag
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pre', 'post']
+
+  - name: training_14_forms_stg
+    description: Cleaned union of cohort 14 pre- and post-test Google Forms responses.
+    columns:
+      - name: record_id
+        tests: [not_null, unique]
+      - name: form_tag
+        tests:
+          - accepted_values:
+              values: ['pre', 'post']
+
+  - name: training_14_sheets_stg
+    description: >
+      Cleaned cohort 14 pre/post Sheets responses, scored against the supplied
+      21-question answer key.
+    columns:
+      - name: record_id
+        tests: [not_null, unique]
+      - name: form_tag
+        tests:
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: score
+        description: Percentage of all 21 questions answered correctly.
+      - name: correct_answer_count
+        description: Number of answers matching the supplied answer key.
+      - name: answered_question_count
+        description: Number of nonblank answers among Q1 through Q21.
+
+  - name: training_13_forms
+    description: >
+      Canonical union of the cohort 13 Forms and Sheets submissions. It keeps
+      the common participant, test, score, location, and training-date columns
+      aligned with `training_12_forms_stg`; source-specific audit fields remain
+      available in the two upstream staging models.
+    columns:
+      - name: record_id
+        description: Source-qualified row identifier, unique across Forms and Sheets.
+        tests:
+          - not_null
+          - unique
+      - name: response_source
+        description: Input dataset containing the response (`forms` or `sheets`).
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['forms', 'sheets']
+      - name: form_tag
+        description: Test side containing the response (`pre` or `post`).
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: score
+        description: Normalized test percentage supplied by Forms or calculated from Sheets answers.
+
+  - name: training_13_forms_stg
+    description: >
+      Cleaned union of the cohort 13 pre- and post-test form outputs, limited
+      to the agreed participant, location, score, and training metadata fields.
+    columns:
+      - name: record_id
+        description: Form-qualified source row identifier.
+        tests:
+          - not_null
+          - unique
+      - name: form_tag
+        description: Source form containing the response (`pre` or `post`).
+        tests:
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: score
+        description: Form score normalized to an integer percentage.
+
+  - name: training_13_sheets_stg
+    description: >
+      Staging table for cohort 13 that unions the raw pre- and post-test
+      sheets, standardizes participant fields, unifies matching name variants,
+      and calculates score from the 19 question responses.
+    columns:
+      - name: record_id
+        description: Form-qualified source row identifier.
+        tests:
+          - not_null
+          - unique
+      - name: form_tag
+        description: Source form containing the response (`pre` or `post`).
+        tests:
+          - accepted_values:
+              values: ['pre', 'post']
+      - name: score
+        description: Percentage of the 19 questions answered correctly, from 0 to 100.
+      - name: correct_answer_count
+        description: Number of responses matching the supplied answer key.
+      - name: answered_question_count
+        description: Number of nonblank question responses.
+      - name: score_raw
+        description: Original `Skor` value retained for auditing; not used to calculate `score`.
+
   - name: register_posyandu_bumil_stg
     description: Staging model for pregnant-mother Posyandu registration data.
     columns:
@@ -11,10 +127,9 @@ models:
           # Null remains allowed when age was not submitted; populated ages must
           # be positive and strictly below the program's 40-year threshold.
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
-                max_value: 40
-                strictly: true
+              min_value: 0
+              max_value: 40
+              strictly: true
 
   - name: training_12_forms_stg
     description: >

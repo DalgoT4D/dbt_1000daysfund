@@ -1,4 +1,4 @@
--- training_12 pre/post matching (intermediate model)
+-- training_12 pre/post matching and participant deduplication
 -- Takes the staged pre- and post-test responses, deduplicates repeat
 -- submissions within each form, then pairs each participant's pre response
 -- with their post response using a tiered cascade of identifiers

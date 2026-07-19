@@ -101,14 +101,6 @@ training_11 as (
     from {{ source('raw_sheets', 'training_11_participants') }}
 ),
 
-training_12 as (
-    select
-        'Kelompok Kerja'::text  as training_type,
-        '12'::text                   as training_code,
-        *
-    from {{ source('raw_sheets', 'training_12_participants') }}
-),
-
 combined as (
     select * from training_01
     union all select * from training_02
@@ -122,7 +114,6 @@ combined as (
     union all select * from training_09b
     union all select * from training_10
     union all select * from training_11
-    union all select * from training_12
 )
 
 select
@@ -145,3 +136,66 @@ select
     nullif(btrim("outcome"), '')              as outcome
 
 from combined
+
+union all
+
+select
+    'Kelompok Kerja'::text as training_type,
+    '12'::text as training_code,
+    year,
+    quarter,
+    date,
+    status,
+    nama as name,
+    peran_category,
+    provinsi as province,
+    kabupaten as district,
+    kecamatan as subdistrict,
+    desa as village,
+    pre_score::numeric,
+    post_score::numeric,
+    delta::numeric,
+    outcome
+from {{ ref('training_12_participants') }}
+
+union all
+
+select
+    'Training 13'::text as training_type,
+    '13'::text as training_code,
+    year,
+    quarter,
+    date,
+    status,
+    nama as name,
+    peran_category,
+    provinsi as province,
+    kabupaten as district,
+    kecamatan as subdistrict,
+    desa as village,
+    pre_score::numeric,
+    post_score::numeric,
+    delta::numeric,
+    outcome
+from {{ ref('training_13_participants') }}
+
+union all
+
+select
+    'Training 14'::text as training_type,
+    '14'::text as training_code,
+    year,
+    quarter,
+    date,
+    status,
+    nama as name,
+    peran_category,
+    provinsi as province,
+    kabupaten as district,
+    kecamatan as subdistrict,
+    desa as village,
+    pre_score::numeric,
+    post_score::numeric,
+    delta::numeric,
+    outcome
+from {{ ref('training_14_participants') }}

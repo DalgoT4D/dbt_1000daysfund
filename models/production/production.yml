@@ -26,17 +26,15 @@ models:
         tests:
           # Scores are percentages; nulls remain allowed when no score was submitted.
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
-                max_value: 100
+              min_value: 0
+              max_value: 100
       - name: is_certified
         description: Certification flag derived from the score threshold.
         tests:
           # The model deliberately emits text flags for historical compatibility.
           - accepted_values:
-              arguments:
-                values: ['TRUE', 'FALSE']
-                quote: true
+              values: ['TRUE', 'FALSE']
+              quote: true
 
   - name: ka_matching
     description: >
@@ -89,17 +87,15 @@ models:
         tests:
           # A false value would mean an older submission leaked into this table.
           - accepted_values:
-              arguments:
-                values: [true]
-                quote: false
+              values: [true]
+              quote: false
       - name: score
         description: Rounded score percentage for the record.
         tests:
           # Scores are percentages; nulls remain allowed when no score was submitted.
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
-                max_value: 100
+              min_value: 0
+              max_value: 100
       - name: person_id
         description: Stable person identifier from `profile_fct`, using an email-based cluster suffix such as `_c0`.
         tests:
@@ -111,13 +107,11 @@ models:
     tests:
       # Enforce the documented one-row-per-person-per-quarter-per-module grain.
       - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns:
-              - person_id
-              - quarter
-              - modul
+          combination_of_columns:
+            - person_id
+            - quarter
+            - modul
 
       # Historical rows belong in ka_all_clean, not in the matching output.
       - dbt_utils.expression_is_true:
-          arguments:
-            expression: "date >= date '2026-04-01'"
+          expression: "date >= date '2026-04-01'"

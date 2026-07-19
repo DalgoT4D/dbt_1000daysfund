@@ -1,6 +1,30 @@
 version: 3
 
 models:
+  - name: training_13_participants
+    description: >
+      Cohort 13 participant-level pre/post output with the same column contract
+      as `training_12_participants`.
+    columns:
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['paired', 'pre_only', 'post_only']
+      - name: match_tier
+        description: Identity rule used to pair pre- and post-test submissions.
+
+  - name: training_14_participants
+    description: >
+      Cohort 14 participant-level pre/post output with the same column contract
+      as `training_12_participants`.
+    columns:
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['paired', 'pre_only', 'post_only']
+      - name: match_tier
+        description: Identity rule used to pair pre- and post-test submissions.
+
   - name: ka_district_lookup_int
     description: >
       Intermediate lookup table for district normalization across KA modules 1,
@@ -76,7 +100,7 @@ models:
         description: >
           Pipe-separated list of distinct raw names seen for the profile in Q2
           2026 and later module submissions.
-  - name: training_12_participants_int
+  - name: training_12_participants
     description: >
       Final paired participant output for cohort 12. It starts from
       `training_12_forms_stg`, deduplicates rows separately within `pre` and
