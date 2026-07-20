@@ -36,6 +36,21 @@ pre as (
 
 post as (
     select * from ranked where form_tag = 'post' and dedupe_rn = 1
+),
+
+pairs as (
+    select p.record_id as pre_id, q.record_id as post_id
+    from pre p
+    join post q on p.participant_key = q.participant_key or (
+        p.unified_name_key = q.unified_name_key and p.desa_key = q.desa_key
+        and p.puskesmas_key = q.puskesmas_key
+    )
+),
+
+spine as (
+    select pre_id, post_id from pairs
+    union all select record_id, null from pre where record_id not in (select pre_id from pairs)
+    union all select null, record_id from post where record_id not in (select post_id from pairs)
 )
 
 select
@@ -86,8 +101,9 @@ select
     initcap(coalesce(q.puskesmas_raw, p.puskesmas_raw)) as puskesmas,
     case
         when p.record_id is null or q.record_id is null then null
-        when p.participant_key like 'phone:%' then 'T1_phone'
-        when p.participant_key like 'name_desa_pusk:%' then 'T3_name_desa_pusk'
+        when p.phone_key = q.phone_key then 'T1_phone'
+        when p.unified_name_key = q.unified_name_key and p.desa_key = q.desa_key
+            and p.puskesmas_key = q.puskesmas_key then 'T3_name_desa_pusk'
         when p.participant_key like 'name_pusk:%' then 'T4_name_pusk'
         when p.participant_key like 'name:%' then 'T5_name_only'
     end as match_tier,
@@ -97,5 +113,6 @@ select
     p.timestamp_raw as pre_timestamp,
     coalesce(q.peran_category, p.peran_category) as peran_category,
     q.timestamp_raw as post_timestamp
-from pre p
-full outer join post q on p.participant_key = q.participant_key
+from spine s
+left join pre p on s.pre_id = p.record_id
+left join post q on s.post_id = q.record_id

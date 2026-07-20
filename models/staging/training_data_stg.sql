@@ -2,7 +2,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["training_data_stg", "staging"]
+    tags=["training_data_stg", "staging", "training"]
 ) }}
 
 with training_01 as (
@@ -161,7 +161,7 @@ from {{ ref('training_12_participants') }}
 union all
 
 select
-    'Training 13'::text as training_type,
+    'Hari 1'::text as training_type,
     '13'::text as training_code,
     year,
     quarter,
@@ -182,7 +182,7 @@ from {{ ref('training_13_participants') }}
 union all
 
 select
-    'Training 14'::text as training_type,
+    'Hari 2'::text as training_type,
     '14'::text as training_code,
     year,
     quarter,
