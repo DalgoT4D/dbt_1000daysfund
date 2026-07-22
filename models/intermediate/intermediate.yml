@@ -1,6 +1,14 @@
 version: 3
 
 models:
+  - name: parent_name_fct
+    description: Similarity-based mapping from submitted parent-name variants to unified parent names.
+    columns:
+      - name: name_variant
+        tests: [not_null]
+      - name: unified_name
+        tests: [not_null]
+
   - name: training_13_participants
     description: >
       Cohort 13 participant-level pre/post output with the same column contract

@@ -2,6 +2,12 @@ version: 3
 
 
 models:
+  - name: asesmen_kunjungan_rumah_kasus
+    description: Flattened Kobo home-visit case assessments enriched with location reference labels.
+    columns:
+      - name: submission_id
+        tests: [not_null, unique]
+
   - name: training_14_forms
     description: >
       Canonical union of cohort 14 Forms and Sheets submissions, aligned with

@@ -1,6 +1,16 @@
 version: 2
 
 models:
+  - name: asesmen_rumah_kasus_summary
+    description: Parent-level Posyandu registration status and home-visit follow-up summary.
+    columns:
+      - name: parent_key
+        tests: [not_null, unique]
+      - name: registration_status
+        tests:
+          - accepted_values:
+              values: ['baduta_and_bumil', 'baduta', 'bumil', 'not_registered']
+
   - name: ka_all_clean
     description: >
       Production KA history combining pre-Q2 2026 records with the latest

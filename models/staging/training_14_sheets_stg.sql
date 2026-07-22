@@ -27,6 +27,7 @@ with source_rows as (
         cast("Jenis_Kelamin" as text) as "Jenis_Kelamin",
         cast("Posyandu_Binaan" as text) as "Posyandu_Binaan",
         cast("Pendidikan_Terakhir" as text) as "Pendidikan_Terakhir",
+        cast({% if form_tag == 'post' %}"Tanggal_Pelatihan"{% else %}"Timestamp"{% endif %} as text) as timestamp_raw_text,
         {% for question_number in range(1, 22) %}
         cast(
             {{ first_existing_column(relation, ['Q' ~ question_number, 'q' ~ question_number]) }}
@@ -56,7 +57,7 @@ cleaned as (
         nullif(trim(cast("Jenis_Kelamin" as text)), '') as jenis_kelamin_raw,
         nullif(trim(cast("Posyandu_Binaan" as text)), '') as posyandu_raw,
         nullif(trim(cast("Pendidikan_Terakhir" as text)), '') as education_raw,
-        null::date as training_date,
+        {{ validate_date('timestamp_raw_text') }} as training_date,
         {% for question_number in range(1, 22) %}
         upper(nullif(trim(cast("Q{{ question_number }}" as text)), '')) as q{{ question_number }}{% if not loop.last %},{% endif %}
         {% endfor %}
