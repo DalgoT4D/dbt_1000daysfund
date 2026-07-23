@@ -1,30 +1,20 @@
 {% macro generate_schema_name(custom_schema_name, node) -%}
 
-    {%- set default_schema = target.schema -%}
+    {%- set default_schema = target.schema | trim -%}
+    {%- set folder_schema = node.fqn[1:-1] | join('_') | trim -%}
 
-    {%- if custom_schema_name is none -%}
-
-       {%- if target.schema != "prod" -%}
-            {% if node.fqn[1:-1]|length == 0 %}
-                 {{target.schema}}_{{ default_schema }}    
-            {% else %}
-                {% set prefix = node.fqn[1:-1]|join('_') %}
-                 {{target.schema}}_{{ prefix | trim }}
-            {% endif %}
-
-
-       {% else %} 
-            {% if node.fqn[1:-1]|length == 0 %}
-                {{ default_schema }}    
-            {% else %}
-                {% set prefix = node.fqn[1:-1]|join('_') %}
-                {{ prefix | trim }}
-            {% endif %}
-         {% endif %}
+    {%- if custom_schema_name is not none and custom_schema_name | trim != '' -%}
+        {%- set resolved_schema = custom_schema_name | trim -%}
+    {%- elif folder_schema != '' -%}
+        {%- set resolved_schema = folder_schema -%}
     {%- else -%}
+        {%- set resolved_schema = default_schema -%}
+    {%- endif -%}
 
-        {{ default_schema }}_{{ custom_schema_name | trim }}
-
+    {%- if default_schema | lower == 'dev' and resolved_schema != default_schema -%}
+        {{ default_schema }}_{{ resolved_schema }}
+    {%- else -%}
+        {{ resolved_schema }}
     {%- endif -%}
 
 {%- endmacro %}

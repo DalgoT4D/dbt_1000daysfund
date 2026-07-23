@@ -1,0 +1,87 @@
+version: 2
+
+models:
+  - name: asesmen_rumah_kasus_summary
+    description: Parent-level home-visit follow-up summary.
+    columns:
+      - name: parent_key
+        tests: [not_null, unique]
+  - name: ka_matching
+    description: >
+      Production-facing KA matching table at the person-by-quarter-by-module
+      grain for Q2 2026 onward only. It filters latest rows from `ka_merge_int`,
+      carries the raw submitted name, and adds `canonical_name` plus
+      `person_id` from `profile_fct`.
+    columns:
+      - name: year
+        description: Calendar year of the record.
+      - name: quarter
+        description: Quarter label associated with the record.
+        tests:
+          # Quarter is required because it participates in the model's declared grain.
+          - not_null
+      - name: date
+        description: Submission or assessment date for the record.
+        tests:
+          # Matching only exposes Q2 2026+ records, all of which must be dateable.
+          - not_null
+      - name: name
+        description: Raw submitted participant name for the record.
+      - name: email
+        description: Normalized email address captured for the participant.
+      - name: age
+        description: Participant age when available. Currently null because the field is not yet modeled upstream.
+      - name: education
+        description: Participant education when available. Currently null because the field is not yet modeled upstream.
+      - name: program
+        description: Program field carried from `ka_merge_int`. It is currently null for Q2 2026+ KA module rows.
+      - name: role
+        description: Participant role for the given record.
+      - name: village
+        description: Village associated with the record.
+      - name: is_certified
+        description: Certification flag derived from score thresholds used elsewhere in the KA production models.
+      - name: district
+        description: Standardized district associated with the record.
+      - name: modul
+        description: KA module identifier for the record.
+        tests:
+          # Module is required because it participates in the model's declared grain.
+          - not_null
+      - name: whatsapp
+        description: Raw WhatsApp number captured for the participant.
+      - name: puskesmas
+        description: Puskesmas associated with the record.
+      - name: is_latest
+        description: Always `true` because this model filters `ka_merge_int` to latest rows.
+        tests:
+          # A false value would mean an older submission leaked into this table.
+          - accepted_values:
+              values: [true]
+              quote: false
+      - name: score
+        description: Rounded score percentage for the record.
+        tests:
+          # Scores are percentages; nulls remain allowed when no score was submitted.
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: person_id
+        description: Stable person identifier from `profile_fct`, using an email-based cluster suffix such as `_c0`.
+        tests:
+          # Downstream consumers use person_id as the durable participant key.
+          - not_null
+      - name: canonical_name
+        description: Canonical participant name, using the unified name from the Q2 2026+ matching logic.
+
+    tests:
+      # Enforce the documented one-row-per-person-per-quarter-per-module grain.
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - person_id
+            - quarter
+            - modul
+
+      # Historical rows remain in ka_merge_int, not in the matching output.
+      - dbt_utils.expression_is_true:
+          expression: "date >= date '2026-04-01'"

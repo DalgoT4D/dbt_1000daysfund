@@ -96,8 +96,8 @@ checks as (
     select
         *,
 
-        -- KEK screening: LILA < 23.5 cm  (TRUE = KEK case / undernourished)
-        (ibu_lila < 23.5) as ibu_kek_check,
+        -- KEK screening: LILA >= 23.5 cm  (TRUE = adequate, i.e. NOT KEK)
+        (ibu_lila >= 23.5) as ibu_kek_check,
 
         -- minimum ANC for gestational age
         case
@@ -130,8 +130,6 @@ final as (
     select
         -- visit
         kunjungan_tanggal,
-        extract(year from kunjungan_tanggal)::int as year,
-        extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
 
         -- cadre / health worker
         chw_nama_1,

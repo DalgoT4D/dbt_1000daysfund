@@ -1,9 +1,4 @@
-{{ config(
-    materialized='table',
-    persist_docs={'relation': true, 'columns': true},
-    quoting={'identifier': true},
-    tags=["register_posyandu_baduta_stg", "staging"]
-) }}
+{{ config(materialized='table', persist_docs={'relation': true, 'columns': true}, quoting={'identifier': true}, tags=["register_posyandu_baduta_zscore", "staging"]) }}
 
 -- typed: cast the raw sheet fields into the types needed for age and z-score logic.
 with typed as (
@@ -148,8 +143,6 @@ flagged as (
 -- fields like baduta_who_sex and the raw LMS pieces internal.
 select
     kunjungan_tanggal,
-    extract(year from kunjungan_tanggal)::int as year,
-    extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
     chw_nama_1, chw_nama_2, chw_nama_3, chw_nama_4, chw_nama_5, chw_nama_6,
     hw_nama_1, hw_nama_2, hw_nama_3, hw_nama_4, hw_nama_5,
     provinsi, kota_kabupaten, kecamatan, desa_kelurahan, puskesmas, posyandu,
