@@ -2,54 +2,14 @@ version: 2
 
 models:
   - name: asesmen_rumah_kasus_summary
-    description: Parent-level Posyandu registration status and home-visit follow-up summary.
+    description: Parent-level home-visit follow-up summary.
     columns:
       - name: parent_key
         tests: [not_null, unique]
-      - name: registration_status
-        tests:
-          - accepted_values:
-              values: ['baduta_and_bumil', 'baduta', 'bumil', 'not_registered']
-
-  - name: ka_all_clean
-    description: >
-      Production KA history combining pre-Q2 2026 records with the latest
-      submission for each participant, quarter, and module from Q2 2026 onward.
-    columns:
-      - name: date
-        description: Submission or assessment date for the record.
-        tests:
-          # Every production row needs a date so the historical/current split is reliable.
-          - not_null
-      - name: quarter
-        description: Quarter label associated with the record.
-        tests:
-          # Quarter is part of the model's declared participant-quarter-module grain.
-          - not_null
-      - name: modul
-        description: KA module identifier for the record.
-        tests:
-          # Module is required to distinguish a participant's separate assessments.
-          - not_null
-      - name: score
-        description: Rounded score percentage for the record.
-        tests:
-          # Scores are percentages; nulls remain allowed when no score was submitted.
-          - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
-      - name: is_certified
-        description: Certification flag derived from the score threshold.
-        tests:
-          # The model deliberately emits text flags for historical compatibility.
-          - accepted_values:
-              values: ['TRUE', 'FALSE']
-              quote: true
-
   - name: ka_matching
     description: >
       Production-facing KA matching table at the person-by-quarter-by-module
-      grain for Q2 2026 onward only. It is sourced from `ka_all_clean`,
+      grain for Q2 2026 onward only. It filters latest rows from `ka_merge_int`,
       carries the raw submitted name, and adds `canonical_name` plus
       `person_id` from `profile_fct`.
     columns:
@@ -74,7 +34,7 @@ models:
       - name: education
         description: Participant education when available. Currently null because the field is not yet modeled upstream.
       - name: program
-        description: Program field carried from `ka_all_clean`. It is currently null for Q2 2026+ KA module rows.
+        description: Program field carried from `ka_merge_int`. It is currently null for Q2 2026+ KA module rows.
       - name: role
         description: Participant role for the given record.
       - name: village
@@ -93,7 +53,7 @@ models:
       - name: puskesmas
         description: Puskesmas associated with the record.
       - name: is_latest
-        description: Always `true` in this Q2 2026+ model because `ka_all_clean` already keeps the latest row for each participant grouping within the quarter and module.
+        description: Always `true` because this model filters `ka_merge_int` to latest rows.
         tests:
           # A false value would mean an older submission leaked into this table.
           - accepted_values:
@@ -122,6 +82,6 @@ models:
             - quarter
             - modul
 
-      # Historical rows belong in ka_all_clean, not in the matching output.
+      # Historical rows remain in ka_merge_int, not in the matching output.
       - dbt_utils.expression_is_true:
           expression: "date >= date '2026-04-01'"

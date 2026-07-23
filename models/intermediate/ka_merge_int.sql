@@ -175,25 +175,56 @@ ranked as (
             order by timestamp_raw desc
         ) as rn
     from with_unified
+),
+
+past_quarter as (
+    select
+        nullif(trim("email"), '') as email,
+        nullif(trim("name"), '') as name,
+        null::varchar as unified_name,
+        nullif(trim("role"), '') as role,
+        nullif(trim("whatsapp"), '') as whatsapp,
+        nullif(trim("district"), '') as district,
+        null::varchar as province,
+        nullif(trim("puskesmas"), '') as puskesmas,
+        nullif(trim("village"), '') as village,
+        nullif(trim("year"), '')::integer as year,
+        nullif(trim("quarter"), '') as quarter,
+        nullif(trim("date"), '')::date as date,
+        round(nullif(trim("score"), '')::numeric)::integer as score,
+        case
+            when nullif(trim("score"), '')::numeric >= 80 then 'TRUE'
+            when nullif(trim("score"), '') is not null then 'FALSE'
+        end as is_certified,
+        nullif(trim("modul"), '') as modul,
+        nullif(trim("program"), '') as program,
+        nullif(trim("is_latest"), '')::boolean as is_latest
+    from {{ source('raw_sheets', 'ka_past_quarter') }}
+    where nullif(trim("date"), '')::date < date '2026-04-01'
+),
+
+current_modules as (
+    select
+        email,
+        name,
+        unified_name,
+        role,
+        whatsapp,
+        district,
+        province,
+        puskesmas,
+        village,
+        year,
+        quarter,
+        date,
+        round(score)::integer as score,
+        case when score >= 80 then 'TRUE' when score is not null then 'FALSE' end as is_certified,
+        modul,
+        null::varchar as program,
+        rn = 1 as is_latest
+    from ranked
 )
 
-select
-    email,
-    name,
-    clean_name,
-    unified_name,
-    role,
-    whatsapp,
-    district_original,
-    district,
-    province,
-    puskesmas,
-    village,
-    year,
-    quarter,
-    date,
-    timestamp_raw,
-    score,
-    modul,
-    case when rn = 1 then true else false end as is_latest_score
-from ranked
+select * from past_quarter
+union all
+select * from current_modules

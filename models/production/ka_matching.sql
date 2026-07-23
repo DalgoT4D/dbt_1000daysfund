@@ -26,14 +26,14 @@ with current_rows as (
             modul,
             nullif(trim(whatsapp), '') as whatsapp,
             nullif(trim(puskesmas), '') as puskesmas,
-            true as is_latest,
+            is_latest,
             cast(score as integer) as score,
             coalesce(nullif(trim(unified_name), ''), nullif(trim(name), '')) as canonical_name,
             {{ profile_name_key('coalesce(unified_name, name)') }} as name_key,
             {{ profile_name_key('district') }} as district_key,
             {{ profile_whatsapp_key('whatsapp') }} as whatsapp_key
-        from {{ ref('ka_all_clean') }}
-        where date >= date '2026-04-01'
+        from {{ ref('ka_merge_int') }}
+        where is_latest and date >= date '2026-04-01'
     ) src
 ),
 

@@ -31,13 +31,14 @@ current_profiles as (
         nullif(trim(role), '') as role,
         nullif(trim(district), '') as district,
         date,
-        timestamp_raw,
+        date::timestamp as timestamp_raw,
         nullif(trim(unified_name), '') as unified_name,
         {{ profile_name_key('coalesce(unified_name, name)') }} as profile_name_key,
         {{ profile_name_key('district') }} as district_key,
         {{ profile_whatsapp_key('whatsapp') }} as whatsapp_key,
         'current' as profile_period
     from {{ ref('ka_merge_int') }}
+    where date >= date '2026-04-01'
 ),
 
 all_profiles as (
