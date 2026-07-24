@@ -1,4 +1,5 @@
-{{ config(materialized='table', persist_docs={'relation': true, 'columns': true}, quoting={'identifier': true}, tags=["register_posyandu_baduta_zscore", "staging"]) }}
+{{ config(materialized='table', persist_docs={'relation': true, 'columns': true},
+quoting={'identifier': true}, tags=["register_posyandu", "staging"]) }}
 
 -- typed: cast the raw sheet fields into the types needed for age and z-score logic.
 with typed as (

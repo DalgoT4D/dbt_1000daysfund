@@ -2,7 +2,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["register_posyandu_combined_stg", "staging"]
+    tags=["register_posyandu_combined_stg", "staging", "register_posyandu", "parent"]
 ) }}
 
 -- Unified Posyandu register: UNION ALL of four staging tables across two sources.
@@ -21,8 +21,8 @@ reg_bumil as (
         'bumil'                          as responden_kategori,
         'register_posyandu'              as source,
         kunjungan_tanggal                as kunjungan_tanggal,
-        year                             as year,
-        quarter                          as quarter,
+        extract(year from kunjungan_tanggal)::int as year,
+        extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
         chw_nama_1                       as chw_nama_1,
         chw_nama_2                       as chw_nama_2,
         chw_nama_3                       as chw_nama_3,
@@ -87,8 +87,8 @@ reg_baduta as (
         'baduta'                         as responden_kategori,
         'register_posyandu'              as source,
         kunjungan_tanggal                as kunjungan_tanggal,
-        year                             as year,
-        quarter                          as quarter,
+        extract(year from kunjungan_tanggal)::int as year,
+        extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
         chw_nama_1                       as chw_nama_1,
         chw_nama_2                       as chw_nama_2,
         chw_nama_3                       as chw_nama_3,

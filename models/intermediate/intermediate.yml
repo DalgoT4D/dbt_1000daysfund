@@ -1,6 +1,24 @@
 version: 3
 
 models:
+  - name: register_posyandu_combined_int
+    description: Register Posyandu and ePus rows with a shared parent identity based on unified name and location.
+    columns:
+      - name: parent_id
+        tests: [not_null]
+      - name: parent_name
+        tests: [not_null]
+
+  - name: kunjungan_rumah_kasus_int
+    description: Home-visit rows with the same parent identity fields as register_posyandu_combined_int.
+    columns:
+      - name: parent_id
+        tests: [not_null]
+      - name: parent_name
+        tests: [not_null]
+      - name: submission_id
+        tests: [not_null, unique]
+
   - name: ka_merge_int
     description: All historical and current KA submissions, with current names unified and every row carrying an is_latest flag.
     columns:

@@ -4,8 +4,10 @@ models:
   - name: asesmen_rumah_kasus_summary
     description: Parent-level home-visit follow-up summary.
     columns:
-      - name: parent_key
+      - name: parent_id
         tests: [not_null, unique]
+      - name: parent_name
+        tests: [not_null]
   - name: ka_matching
     description: >
       Production-facing KA matching table at the person-by-quarter-by-module

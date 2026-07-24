@@ -1,12 +1,11 @@
-{{ config(materialized='table', tags=['intermediate', 'parent', 'ACTIVEKunjungan_Rumah_Kasus']) }}
+{{ config(materialized='table', tags=['intermediate', 'parent', 'register_posyandu']) }}
 
 with recursive names as (
     select distinct nullif(trim(parent_name), '') as name_variant,
         {{ profile_name_key('parent_name') }} as name_key
     from (
-        select baduta_pengasuh_nama as parent_name from {{ ref('register_posyandu_baduta_stg') }}
-        union all
-        select ibu_nama from {{ ref('register_posyandu_bumil_stg') }}
+        select coalesce(ibu_nama, baduta_pengasuh_nama) as parent_name
+        from {{ ref('register_posyandu_combined_stg') }}
         union all
         select pengasuh_nama from {{ ref('asesmen_kunjungan_rumah_kasus') }}
     ) source_names

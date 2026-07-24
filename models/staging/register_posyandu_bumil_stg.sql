@@ -2,7 +2,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["register_posyandu_bumil_stg", "staging"]
+    tags=["register_posyandu", "staging", "parent"]
 ) }}
 
 with source as (
