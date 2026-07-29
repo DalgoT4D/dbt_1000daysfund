@@ -161,7 +161,7 @@ from {{ ref('training_12_participants') }}
 union all
 
 select
-    'Hari 1'::text as training_type,
+    'Poster Pintar, GC, Manajemen Posyandu'::text as training_type,
     '13'::text as training_code,
     year,
     quarter,
@@ -182,7 +182,7 @@ from {{ ref('training_13_participants') }}
 union all
 
 select
-    'Hari 2'::text as training_type,
+    'ASI, MPASI, ICCM'::text as training_type,
     '14'::text as training_code,
     year,
     quarter,
