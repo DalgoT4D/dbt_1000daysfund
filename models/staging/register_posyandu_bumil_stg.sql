@@ -129,6 +129,7 @@ final as (
 
     select
         -- visit
+        extract(year from kunjungan_tanggal)::int as year,
         kunjungan_tanggal,
 
         -- cadre / health worker

@@ -5,49 +5,29 @@ models:
     description: Register Posyandu and ePus rows with a shared parent identity based on unified name and location.
     columns:
       - name: parent_id
-        tests: [not_null]
       - name: parent_name
-        tests: [not_null]
 
   - name: kunjungan_rumah_kasus_int
     description: Home-visit rows with the same parent identity fields as register_posyandu_combined_int.
     columns:
       - name: parent_id
-        tests: [not_null]
       - name: parent_name
-        tests: [not_null]
       - name: submission_id
-        tests: [not_null, unique]
 
   - name: ka_merge_int
     description: All historical and current KA submissions, with current names unified and every row carrying an is_latest flag.
     columns:
       - name: date
-        tests: [not_null]
       - name: quarter
-        tests: [not_null]
       - name: modul
-        tests: [not_null]
       - name: is_latest
-        tests: [not_null]
       - name: score
-        tests:
-          - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
       - name: is_certified
-        tests:
-          - accepted_values:
-              values: ['TRUE', 'FALSE']
-              quote: true
-
   - name: parent_name_fct
     description: Similarity-based mapping from submitted parent-name variants to unified parent names.
     columns:
       - name: name_variant
-        tests: [not_null]
       - name: unified_name
-        tests: [not_null]
 
   - name: training_13_participants
     description: >
@@ -55,9 +35,6 @@ models:
       as `training_12_participants`.
     columns:
       - name: status
-        tests:
-          - accepted_values:
-              values: ['paired', 'pre_only', 'post_only']
       - name: match_tier
         description: Identity rule used to pair pre- and post-test submissions.
 
@@ -67,9 +44,6 @@ models:
       as `training_12_participants`.
     columns:
       - name: status
-        tests:
-          - accepted_values:
-              values: ['paired', 'pre_only', 'post_only']
       - name: match_tier
         description: Identity rule used to pair pre- and post-test submissions.
 

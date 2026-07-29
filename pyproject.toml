@@ -1,5 +1,5 @@
 [project]
-name = "dbt-dalgo-engineering"
+name = "dbt_1000daysfund"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

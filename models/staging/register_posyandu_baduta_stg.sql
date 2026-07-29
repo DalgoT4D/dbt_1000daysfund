@@ -143,6 +143,7 @@ flagged as (
 -- terminal select: expose the business-facing columns only, keeping helper
 -- fields like baduta_who_sex and the raw LMS pieces internal.
 select
+    extract(year from kunjungan_tanggal)::int as year,
     kunjungan_tanggal,
     chw_nama_1, chw_nama_2, chw_nama_3, chw_nama_4, chw_nama_5, chw_nama_6,
     hw_nama_1, hw_nama_2, hw_nama_3, hw_nama_4, hw_nama_5,

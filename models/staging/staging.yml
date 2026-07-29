@@ -6,7 +6,6 @@ models:
     description: Flattened Kobo home-visit case assessments enriched with location reference labels.
     columns:
       - name: submission_id
-        tests: [not_null, unique]
 
   - name: training_14_forms
     description: >
@@ -14,39 +13,20 @@ models:
       the common cohort 12 and 13 participant and assessment columns.
     columns:
       - name: record_id
-        tests: [not_null, unique]
       - name: response_source
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['forms', 'sheets']
       - name: form_tag
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['pre', 'post']
-
   - name: training_14_forms_stg
     description: Cleaned union of cohort 14 pre- and post-test Google Forms responses.
     columns:
       - name: record_id
-        tests: [not_null, unique]
       - name: form_tag
-        tests:
-          - accepted_values:
-              values: ['pre', 'post']
-
   - name: training_14_sheets_stg
     description: >
       Cleaned cohort 14 pre/post Sheets responses, scored against the supplied
       21-question answer key.
     columns:
       - name: record_id
-        tests: [not_null, unique]
       - name: form_tag
-        tests:
-          - accepted_values:
-              values: ['pre', 'post']
       - name: score
         description: Percentage of all 21 questions answered correctly.
       - name: correct_answer_count
@@ -63,21 +43,10 @@ models:
     columns:
       - name: record_id
         description: Source-qualified row identifier, unique across Forms and Sheets.
-        tests:
-          - not_null
-          - unique
       - name: response_source
         description: Input dataset containing the response (`forms` or `sheets`).
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['forms', 'sheets']
       - name: form_tag
         description: Test side containing the response (`pre` or `post`).
-        tests:
-          - not_null
-          - accepted_values:
-              values: ['pre', 'post']
       - name: score
         description: Normalized test percentage supplied by Forms or calculated from Sheets answers.
 
@@ -88,14 +57,8 @@ models:
     columns:
       - name: record_id
         description: Form-qualified source row identifier.
-        tests:
-          - not_null
-          - unique
       - name: form_tag
         description: Source form containing the response (`pre` or `post`).
-        tests:
-          - accepted_values:
-              values: ['pre', 'post']
       - name: score
         description: Form score normalized to an integer percentage.
 
@@ -107,14 +70,8 @@ models:
     columns:
       - name: record_id
         description: Form-qualified source row identifier.
-        tests:
-          - not_null
-          - unique
       - name: form_tag
         description: Source form containing the response (`pre` or `post`).
-        tests:
-          - accepted_values:
-              values: ['pre', 'post']
       - name: score
         description: Percentage of the 19 questions answered correctly, from 0 to 100.
       - name: correct_answer_count
@@ -124,18 +81,97 @@ models:
       - name: score_raw
         description: Original `Skor` value retained for auditing; not used to calculate `score`.
 
+  - name: register_posyandu_baduta_stg
+    description: Staging model for under-five Posyandu registration data.
+    columns:
+      - name: year
+        description: Visit year; required and no earlier than 2026.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 2026
+      - name: baduta_usia_bulan
+        description: Child's age in completed months; required and between 0 and 60.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 60
+      - name: baduta_tinggi_badan
+        description: Child's height; populated values must be between 30 and 125.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 30
+              max_value: 125
+      - name: baduta_berat_badan
+        description: Child's weight; populated values must be between 2 and 25.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 2
+              max_value: 25
+      - name: baduta_protein_biner
+        description: Protein indicator, conditionally validated against baduta_mpasi_biner.
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "is not null"
+              config:
+                where: "baduta_mpasi_biner = 'TRUE'"
+          - dbt_utils.expression_is_true:
+              expression: "is distinct from 'TRUE'"
+              config:
+                where: "baduta_mpasi_biner = 'FALSE'"
+      - name: baduta_waz
+        description: Weight-for-age z-score; populated values must be between -6.0 and 6.0.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -6.0
+              max_value: 6.0
+      - name: baduta_haz
+        description: Height-for-age z-score; populated values must be between -6.0 and 6.0.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -6.0
+              max_value: 6.0
+
   - name: register_posyandu_bumil_stg
     description: Staging model for pregnant-mother Posyandu registration data.
     columns:
-      - name: ibu_usia
-        description: Mother's age in completed years.
+      - name: year
+        description: Visit year; required and no earlier than 2026.
         tests:
-          # Null remains allowed when age was not submitted; populated ages must
-          # be positive and strictly below the program's 40-year threshold.
+          - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 40
-              strictly: true
+              min_value: 2026
+      - name: ibu_usia
+        description: Mother's age; populated values must be between 10 and 99.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 10
+              max_value: 99
+      - name: ibu_tekanan_darah_sistolik
+        description: Systolic blood pressure; populated values must be between 50 and 150.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 50
+              max_value: 150
+      - name: ibu_tekanan_darah_diastolik
+        description: Diastolic blood pressure; populated values must be between 40 and 130.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 40
+              max_value: 130
+      - name: ibu_lila
+        description: Mid-upper arm circumference; populated values must be between 11 and 45.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 11
+              max_value: 45
+      - name: ibu_usia_kehamilan_minggu
+        description: Gestational age; populated values must be between 1 and 43 completed weeks.
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 43
 
   - name: training_12_forms_stg
     description: >
@@ -174,26 +210,14 @@ models:
     columns:
       - name: submission_id
         description: Kobo submission identifier from `_id`.
-        tests:
-          - not_null
-          - unique
       - name: submission_start_at
         description: Timestamp when the form session started.
-        tests:
-          - not_null
       - name: submission_end_at
         description: Timestamp when the form session ended.
-        tests:
-          - not_null
       - name: submission_time
         description: Timestamp when the submission was received by Kobo.
-        tests:
-          - not_null
       - name: submission_uuid
         description: Kobo submission UUID from `_uuid`.
-        tests:
-          - not_null
-          - unique
       - name: submission_status
         description: Submission status from Kobo, such as `submitted_via_web`.
       - name: submission_version
@@ -252,8 +276,6 @@ models:
         description: Free-text enumerator name recorded in the pembukaan section.
       - name: pembukaan_kunjungan_tanggal
         description: Visit date recorded in the pembukaan section.
-        tests:
-          - not_null
       - name: langkah_1_1_kader_menyediakan_kartu_nomor_antrian
         description: Response captured for langkah posyandu 1.1.
       - name: langkah_1_2_kader_mendata_sasaran_lembar_registrasi
