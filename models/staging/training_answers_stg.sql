@@ -11,7 +11,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["training_answers_stg", "staging"]
+    tags=["training_answers_stg", "staging", "training"]
 ) }}
 
 with training_meta (training, training_name) as (
