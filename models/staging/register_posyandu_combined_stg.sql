@@ -2,7 +2,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["register_posyandu_combined_stg", "staging"]
+    tags=["register_posyandu_combined_stg", "staging", "register_posyandu", "parent"]
 ) }}
 
 -- Unified Posyandu register: UNION ALL of six staging inputs across three sources.

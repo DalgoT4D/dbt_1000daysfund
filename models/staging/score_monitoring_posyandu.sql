@@ -4,7 +4,6 @@
     quoting={'identifier': true},
     tags=["score_monitoring_posyandu", "staging", "monitoring_posyandu"]
 ) }}
-{{ config(materialized='table') }}
 
 with active as (
 
