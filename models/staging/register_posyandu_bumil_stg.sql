@@ -42,8 +42,12 @@ typed as (
         nullif(btrim(ibu_nama), '')                             as ibu_nama,
         nullif(btrim(ibu_usia), '')::int                        as ibu_usia,
         nullif(btrim(ibu_hpht), '')::date                       as ibu_hpht,
-        nullif(btrim(ibu_tekanan_darah_sistolik), '')::numeric
-                                                                as ibu_tekanan_darah_sistolik,
+        case
+            when replace(btrim(ibu_tekanan_darah_sistolik), ',', '.')
+                     ~ '^[+-]?(\d+(\.\d*)?|\.\d+)$'
+                then replace(btrim(ibu_tekanan_darah_sistolik), ',', '.')::numeric
+            else null
+        end                                                     as ibu_tekanan_darah_sistolik,
         nullif(btrim(ibu_tekanan_darah_diastolik), '')::numeric as ibu_tekanan_darah_diastolik,
         nullif(btrim(ibu_lila), '')::numeric                    as ibu_lila,
         nullif(btrim(ibu_ttd_mulai), '')::numeric               as ibu_ttd_mulai,
