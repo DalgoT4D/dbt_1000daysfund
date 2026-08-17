@@ -1,3 +1,4 @@
+-- Model: Deduplicates and pairs cohort 12 pre/post responses by participant.
 -- training_12 pre/post matching and participant deduplication
 -- Takes the staged pre- and post-test responses, deduplicates repeat
 -- submissions within each form, then pairs each participant's pre response
@@ -25,11 +26,13 @@
 
 -- base: pull staged rows and add the person-level matching keys. Split in two
 -- so person_name_key is computed once instead of repeating the coalesce.
+-- Build the base participant-name key for each response.
 with base as (
     select *, coalesce(unified_name_key, nama_key) as person_name_key
     from {{ ref('training_12_forms_stg') }}
 ),
 
+-- Build composite participant keys for tiered matching.
 keyed as (
     select
         *,
@@ -44,6 +47,7 @@ keyed as (
 -- person. Identity = best available key (phone > nik > name+desa+pusk >
 -- name+pusk > name > own row). `||` propagates null, so each candidate drops
 -- out cleanly when its key is missing. Keep the highest score, newest first.
+-- Rank duplicate responses within each test side.
 ranked as (
     select
         *,
@@ -63,7 +67,9 @@ ranked as (
 
 -- pre_dedup / post_dedup: the surviving (best) row per person per form,
 -- split into the two pools that the matching cascade will pair up.
+-- Keep one pre-test response per participant.
 pre_dedup as (select * from ranked where dedupe_rn = 1 and form_tag = 'pre'),
+-- Keep one post-test response per participant.
 post_dedup as (select * from ranked where dedupe_rn = 1 and form_tag = 'post'),
 
 -- Tiered matching cascade, generated per tier:
@@ -77,6 +83,7 @@ post_dedup as (select * from ranked where dedupe_rn = 1 and form_tag = 'post'),
 {% set pre_src = 'pre_dedup' if loop.first else 'pre_after_t' ~ (i - 1) %}
 {% set post_src = 'post_dedup' if loop.first else 'post_after_t' ~ (i - 1) %}
 
+-- Rank remaining pre-test rows for this matching tier.
 pre_t{{ i }} as (
     select record_id, {{ t.key }},
         row_number() over (partition by {{ t.key }} order by timestamp_raw, record_id) as key_rn
@@ -84,6 +91,7 @@ pre_t{{ i }} as (
     where {{ t.key }} is not null
 ),
 
+-- Rank remaining post-test rows for this matching tier.
 post_t{{ i }} as (
     select record_id, {{ t.key }},
         row_number() over (partition by {{ t.key }} order by timestamp_raw, record_id) as key_rn
@@ -91,6 +99,7 @@ post_t{{ i }} as (
     where {{ t.key }} is not null
 ),
 
+-- Pair pre-test and post-test rows for this matching tier.
 match_t{{ i }} as (
     select
         p.record_id as pre_record_id,
@@ -103,11 +112,13 @@ match_t{{ i }} as (
 ),
 {% if not loop.last %}
 
+-- Keep pre-test rows unmatched after this tier.
 pre_after_t{{ i }} as (
     select p.* from {{ pre_src }} p
     where not exists (select 1 from match_t{{ i }} m where m.pre_record_id = p.record_id)
 ),
 
+-- Keep post-test rows unmatched after this tier.
 post_after_t{{ i }} as (
     select q.* from {{ post_src }} q
     where not exists (select 1 from match_t{{ i }} m where m.post_record_id = q.record_id)
@@ -117,6 +128,7 @@ post_after_t{{ i }} as (
 
 -- all_matches: every pre->post pairing found across all tiers. A record id can
 -- appear at most once, because each tier only saw rows unmatched so far.
+-- Stack matches found across all tiers.
 all_matches as (
     {% for t in tiers %}
     select * from match_t{{ loop.index }}{% if not loop.last %} union all{% endif %}
@@ -127,6 +139,7 @@ all_matches as (
 -- (post side null) and unmatched post rows (pre side null). The final select
 -- left-joins both sides, so every coalesce(q.x, p.x) naturally degrades to the
 -- surviving side and paired/pre_only/post_only need no separate code paths.
+-- Retain paired and unmatched responses.
 spine as (
     select pre_record_id, post_record_id, match_tier, match_score from all_matches
     union all

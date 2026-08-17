@@ -1,3 +1,4 @@
+-- Model: Cleans government maternal Posyandu records and derives health indicators.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -16,12 +17,14 @@
 -- ibu_hipertensi_check will therefore be mostly null - treat them as
 -- "not measured", not "passed".
 
+-- Load raw government maternal records.
 with source as (
 
     select * from {{ source('raw_sheets', 'register_posyandu_pemerintah_bumil') }}
 
 ),
 
+-- Cast raw government maternal fields to analysis-ready types.
 typed as (
 
     select
@@ -65,6 +68,7 @@ typed as (
 
 ),
 
+-- Rank duplicate government records.
 keyed as (
 
     select
@@ -78,6 +82,7 @@ keyed as (
 
 ),
 
+-- Derive valid gestational age and trimester.
 gestational_age as (
 
     -- HPHT is only trusted when it puts the visit inside 0-45 completed weeks.
@@ -100,6 +105,7 @@ gestational_age as (
 
 ),
 
+-- Derive available maternal health checks.
 checks as (
 
     select
@@ -119,6 +125,7 @@ checks as (
 
 ),
 
+-- Select the standardized government maternal output columns.
 final as (
 
     select

@@ -5,3 +5,4 @@ logs/
 profiles.yml
 .venv/
 venv/
+generate_dictionary.py

@@ -1,11 +1,14 @@
+-- Model: Builds approved and suggested corrections for KA district names.
 {% set district_source_tables = ['ka_modul_01', 'ka_modul_02', 'ka_modul_03'] %}
 
 {% set existing_typos_ctes %}
+-- Load existing district typo entries.
 existing_typos_raw as (
     select lower(trim(typo)) as typo_key, trim(typo) as typo, nullif(trim(district), '') as district
     from reference.district_typos
     where nullif(trim(typo), '') is not null
 ),
+-- Select one approved mapping per typo key.
 existing_mappings as (
     select distinct on (typo_key) typo_key, typo, district
     from existing_typos_raw
@@ -15,12 +18,14 @@ existing_mappings as (
 {% endset %}
 
 {% set district_suggestions_query %}
+-- Stack district values from all KA modules.
 with raw_districts as (
     {%- for table_name in district_source_tables %}
     select "Kabupaten_Kota" as district_value from raw_sheets."{{ table_name }}"{% if not loop.last %} union all{% endif %}
     {%- endfor %}
 ),
 
+-- Normalize observed district values for matching.
 source_districts_base as (
     select
         {{ normalize_unicode('district_value') }} as district_raw,
@@ -29,6 +34,7 @@ source_districts_base as (
     from raw_districts
 ),
 
+-- Count distinct normalized source districts.
 source_districts as (
     select
         district_raw,
@@ -43,6 +49,7 @@ source_districts as (
 
 {{ existing_typos_ctes }},
 
+-- Normalize official district labels for matching.
 district_catalog_base as (
     select distinct
         trim(label) as district,
@@ -52,6 +59,7 @@ district_catalog_base as (
     where nullif(trim(label), '') is not null
 ),
 
+-- Add stripped keys and type hints to official districts.
 district_catalog as (
     select
         district,
@@ -61,6 +69,7 @@ district_catalog as (
     from district_catalog_base
 ),
 
+-- Keep valid source districts without approved mappings.
 unmatched_districts as (
     select sd.*
     from source_districts sd
@@ -70,6 +79,7 @@ unmatched_districts as (
         and length(sd.district_match_key) >= 4
 ),
 
+-- Score plausible official matches for each source district.
 candidate_matches as (
     select
         lower(trim(u.district_raw)) as typo_key,
@@ -104,6 +114,7 @@ candidate_matches as (
         )
 ),
 
+-- Rank candidate districts by match strength.
 ranked_candidates as (
     select
         *,
@@ -120,6 +131,7 @@ ranked_candidates as (
     )
 ),
 
+-- Keep high-confidence district suggestions.
 approved_matches as (
     select
         typo_key,
@@ -183,10 +195,12 @@ where not exists (
 with
 {{ existing_typos_ctes }},
 
+-- Generate high-confidence mappings for unmapped districts.
 suggested_matches as (
     {{ district_suggestions_query }}
 ),
 
+-- Combine approved reference mappings with new suggestions.
 final_lookup as (
     select typo_key, typo, district, 'reference' as mapping_source, 'reference' as match_method, null::bigint as observation_count, null::numeric as similarity_score
     from existing_mappings

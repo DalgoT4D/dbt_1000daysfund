@@ -1,3 +1,4 @@
+-- Model: Cleans government child Posyandu records and derives growth indicators.
 {{ config(materialized='table', persist_docs={'relation': true, 'columns': true},
 quoting={'identifier': true}, tags=["register_posyandu", "staging", "parent", "pemerintah"]) }}
 
@@ -9,6 +10,7 @@ quoting={'identifier': true}, tags=["register_posyandu", "staging", "parent", "p
 --   baduta_protein_biner, kr_jumlah  -> and therefore asi_check / protein_check.
 
 -- typed: cast the raw sheet fields into the types needed for age and z-score logic.
+-- Cast raw government child fields to analysis-ready types.
 with typed as (
     select
         nullif(btrim(kunjungan_tanggal), '')::date as kunjungan_tanggal, -- visit date
@@ -39,6 +41,7 @@ with typed as (
 -- keyed: duplicate detection.
 -- The source contains ~950 byte-identical repeat rows; they are flagged here
 -- rather than dropped so the count can be reconciled against the government file.
+-- Rank duplicate government records.
 keyed as (
     select
         *,
@@ -51,6 +54,7 @@ keyed as (
 
 -- aged: derive the WHO lookup keys from the cleaned row.
 -- births dated after the visit are rejected (2 such rows in the government file).
+-- Derive child age and WHO sex keys.
 aged as (
     select
         *,
@@ -68,17 +72,20 @@ aged as (
 ),
 
 -- ref_wfa / ref_lhfa: WHO growth lookup tables keyed by sex + completed month of age.
+-- Load weight-for-age WHO reference values.
 ref_wfa as (
     select sex, month::int as month, l::numeric as l, m::numeric as m, s::numeric as s
     from {{ source('reference', 'who_wfa') }}
 ),
 
+-- Load length/height-for-age WHO reference values.
 ref_lhfa as (
     select sex, month::int as month, m::numeric as m, s::numeric as s, l::numeric as l
     from {{ source('reference', 'who_lhfa') }}
 ),
 
 -- lms_joined: bring the WHO WFA LMS values and LHFA M/S values onto each child record.
+-- Attach WHO reference values to each child record.
 lms_joined as (
     select
         a.*,
@@ -96,6 +103,7 @@ lms_joined as (
 -- zscore_inputs:
 --   WFA raw LMS z-score = ((y / M)^L - 1) / (S * L)
 --   WFA WHO SD cutoff   = M * (1 + L * S * k)^(1 / L)
+-- Calculate raw z-scores and WHO tail cutoffs.
 zscore_inputs as (
     select
         l.*,
@@ -115,6 +123,7 @@ zscore_inputs as (
 -- zscored: keep the raw z-score inside +/-3 SD, otherwise switch to the WHO
 -- linear tail adjustment using the +/-2 SD and +/-3 SD cutoffs.
 -- https://cdn.who.int/media/docs/default-source/child-growth/growth-reference-5-19-years/computation.pdf?sfvrsn=c2ff6a95_4
+-- Apply WHO linear adjustments to extreme z-scores.
 zscored as (
     select
         z.*,
@@ -129,6 +138,7 @@ zscored as (
 
 -- flagged: only the z-score checks are derivable here; the feeding checks
 -- depend on asi/mpasi/protein binaries the government register does not carry.
+-- Derive available growth risk flags.
 flagged as (
     select
         z.*,

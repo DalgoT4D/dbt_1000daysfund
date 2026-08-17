@@ -1,3 +1,4 @@
+-- Model: Matches current KA participation records to canonical profiles.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,6 +6,7 @@
     tags=["ka"]
 ) }}
 
+-- Prepare latest current-module records for profile matching.
 with current_rows as (
     select
         src.*,
@@ -37,6 +39,7 @@ with current_rows as (
     ) src
 ),
 
+-- Normalize canonical profile identifiers.
 profile_lookup_base as (
     select
         person_id,
@@ -50,6 +53,7 @@ profile_lookup_base as (
     from {{ ref('profile_fct') }}
 ),
 
+-- Build the profile join key.
 profile_lookup as (
     select
         *,
@@ -57,6 +61,7 @@ profile_lookup as (
     from profile_lookup_base
 ),
 
+-- Attach canonical profiles to current KA records.
 matched_profiles as (
     select
         year,

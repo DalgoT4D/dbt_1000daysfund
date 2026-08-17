@@ -1,3 +1,4 @@
+-- Model: Cleans and standardizes cohort 12 pre/post form responses.
 {% set pre_relation = source('raw_sheets', 'training_12_pre') %}
 {% set post_relation = source('raw_sheets', 'training_12_post') %}
 
@@ -17,6 +18,7 @@ with recursive
 -- fixed set of *_raw columns (via first_existing_column), casts everything to
 -- text, tags rows with 'pre'/'post', and assigns an arbitrary per-source row id.
 {% for form_tag, relation in {'pre': pre_relation, 'post': post_relation}.items() %}
+-- Load and align the {{ form_tag }}-test form.
 {{ form_tag }}_base as (
     select
         row_number() over () as source_row_id,
@@ -42,6 +44,7 @@ with recursive
 
 -- all_rows: stack pre and post responses into a single table. Safe because both
 -- base CTEs expose identical column names and types; form_tag tells them apart.
+-- Stack aligned pre-test and post-test responses.
 all_rows as (
     select * from pre_base
     union all
@@ -53,6 +56,7 @@ all_rows as (
 -- and compute every macro-derived matching key (normalized name/geo keys,
 -- digits-only phone and NIK) exactly once. Later CTEs branch on these aliases
 -- instead of re-invoking the macros.
+-- Clean raw fields and calculate matching keys.
 keyed as (
     select
         concat(form_tag, '_', source_row_id) as record_id,
@@ -100,6 +104,7 @@ keyed as (
 --   education:      free-text education mapped to 5 ordered buckets
 --   peran_category: free-text role mapped to Health Worker / Community Health
 --                   Worker / Task Force / General via keyword regexes
+-- Standardize scores, phones, gender, education, and roles.
 normalized as (
     select
         *,
@@ -140,6 +145,7 @@ normalized as (
 
 -- name_observations: one row per distinct combination of name key + identifying
 -- context (phone, NIK, geography). Input to the fuzzy-matching self-join below.
+-- Collect distinct names with their identity context.
 name_observations as (
     select distinct nama_key, phone_key, nik_key, desa_key, kabupaten_key, kecamatan_key, puskesmas_key
     from normalized
@@ -152,6 +158,7 @@ name_observations as (
 -- similar (trigram similarity >= 0.72, or one name is a prefix of the other,
 -- e.g. "siti" vs "siti aminah"). root = the lexicographically smaller of the
 -- pair, used as the group seed below.
+-- Link likely spelling variants of the same person's name.
 name_pairs as (
     select distinct a.nama_key, least(a.nama_key, b.nama_key) as root
     from name_observations a
@@ -176,6 +183,7 @@ name_pairs as (
 -- name_groups (recursive): transitive closure over the pairs, so chains link up
 -- even without a direct match — if A~B and B~C, all three end up sharing a root.
 -- The recursion runs to fixpoint, so no extra manual chaining hop is needed.
+-- Traverse linked names into variant groups.
 name_groups (nama_key, root) as (
     select nama_key, root from name_pairs
     union
@@ -186,6 +194,7 @@ name_groups (nama_key, root) as (
 
 -- name_group_map: collapse the closure to one label per name — the smallest
 -- reachable root becomes the group id shared by every spelling variant.
+-- Assign one stable group key to each name.
 name_group_map as (
     select nama_key, min(root) as name_group_key
     from name_groups
@@ -197,6 +206,7 @@ name_group_map as (
 -- broadcast to every row in the group via first_value(). Singletons (names with
 -- no match) need no special-case rows: the left join misses and the coalesce
 -- falls back to nama_key / record_id, making each its own group.
+-- Select one canonical display name per group.
 with_unified as (
     select
         n.*,

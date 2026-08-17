@@ -1,3 +1,4 @@
+-- Model: Builds one canonical profile per KA participant.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,6 +6,7 @@
     tags=["ka", "intermediate"]
 ) }}
 
+-- Standardize historical participant profiles.
 with past_profiles as (
     select
         nullif(trim("name"), '') as name,
@@ -23,6 +25,7 @@ with past_profiles as (
     where cast(nullif(trim("date"), '') as date) < date '2026-04-01'
 ),
 
+-- Standardize current participant profiles.
 current_profiles as (
     select
         nullif(trim(name), '') as name,
@@ -41,6 +44,7 @@ current_profiles as (
     where date >= date '2026-04-01'
 ),
 
+-- Stack historical and current profiles with person keys.
 all_profiles as (
     select
         coalesce(unified_name, name) as canonical_name,
@@ -73,6 +77,7 @@ all_profiles as (
     from current_profiles
 ),
 
+-- Aggregate current name variants per person.
 current_name_variants as (
     select
         person_key,
@@ -89,6 +94,7 @@ current_name_variants as (
     group by person_key
 ),
 
+-- Select the latest nonblank attributes per person.
 profile_rollup as (
     select
         person_key,
@@ -103,6 +109,7 @@ profile_rollup as (
     group by person_key
 ),
 
+-- Attach name variants to canonical profiles.
 profiles_with_variants as (
     select
         pr.person_key,
@@ -117,6 +124,7 @@ profiles_with_variants as (
         on pr.person_key = cnv.person_key
 ),
 
+-- Disambiguate profiles that share the same primary identifier.
 profiles_ranked as (
     select
         *,

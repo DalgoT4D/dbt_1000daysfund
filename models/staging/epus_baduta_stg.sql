@@ -1,3 +1,4 @@
+-- Model: Reshapes EPUS baduta records to the Posyandu register schema.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -11,12 +12,14 @@
 -- year/quarter. No recomputation. The *_biner columns stay text ('TRUE'/'FALSE')
 -- to match the register baduta staging output. Source assumed airbyte-typed (real NULLs).
 
+-- Load processed EPUS baduta records.
 with source as (
 
     select * from {{ source('raw_sheets', 'epus_baduta') }}
 
 ),
 
+-- Cast fields and align them with the register output types.
 typed as (
 
     select

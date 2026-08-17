@@ -1,3 +1,4 @@
+-- Model: Summarizes home visits and referrals by parent.
 {{ config(materialized='table', tags=['production', 'parent', 'ACTIVEKunjungan_Rumah_Kasus']) }}
 
 select

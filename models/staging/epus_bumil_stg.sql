@@ -1,3 +1,4 @@
+-- Model: Reshapes EPUS bumil records to the Posyandu register schema.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -11,12 +12,14 @@
 -- year/quarter. No recomputation of checks/derivations. Source table is
 -- assumed to use real NULLs (airbyte-typed), not empty strings.
 
+-- Load processed EPUS bumil records.
 with source as (
 
     select * from {{ source('raw_sheets', 'epus_bumil') }}
 
 ),
 
+-- Cast fields and align them with the register output types.
 typed as (
 
     select

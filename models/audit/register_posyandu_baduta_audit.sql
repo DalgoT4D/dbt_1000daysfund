@@ -1,5 +1,7 @@
+-- Model: Lists Posyandu baduta records that fail validation checks.
 {{ config(materialized='table') }}
 
+-- Flag each record against the configured data-quality rules.
 with flagged as (
 
     select

@@ -1,10 +1,13 @@
+-- Model: Flattens Kobo home-visit assessments with location labels.
 {{ config(materialized='table') }}
 
+-- Parse each nonblank raw Kobo payload as JSON.
 with source_data as (
     select case when data is null or trim(data::text) = '' then null::jsonb else data::jsonb end as json_payload
     from {{ source('raw_kobo', 'ACTIVEKunjungan_Rumah_Kasus') }}
 ),
 
+-- Cast assessment fields from the JSON payload.
 typed_data as (
     select
         nullif(json_payload ->> '_id', '')::bigint as submission_id,

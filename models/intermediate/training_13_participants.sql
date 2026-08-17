@@ -1,3 +1,4 @@
+-- Model: Pairs cohort 13 pre/post responses by participant.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,6 +6,7 @@
     tags=['intermediate', 'training_13', 'training']
 ) }}
 
+-- Build the strongest available participant key per response.
 with base as (
     select
         *,
@@ -20,6 +22,7 @@ with base as (
     from {{ ref('training_13_forms') }}
 ),
 
+-- Rank duplicate responses within each test side.
 ranked as (
     select
         *,
@@ -30,14 +33,17 @@ ranked as (
     from base
 ),
 
+-- Keep one pre-test response per participant.
 pre as (
     select * from ranked where form_tag = 'pre' and dedupe_rn = 1
 ),
 
+-- Keep one post-test response per participant.
 post as (
     select * from ranked where form_tag = 'post' and dedupe_rn = 1
 ),
 
+-- Match pre-test and post-test responses.
 pairs as (
     select p.record_id as pre_id, q.record_id as post_id
     from pre p
@@ -47,6 +53,7 @@ pairs as (
     )
 ),
 
+-- Retain paired and unmatched responses.
 spine as (
     select pre_id, post_id from pairs
     union all select record_id, null from pre where record_id not in (select pre_id from pairs)

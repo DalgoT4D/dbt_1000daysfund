@@ -1,3 +1,4 @@
+-- Model: Cleans and scores cohort 13 Sheets responses.
 {% set answer_key = ['B', 'C', 'D', 'D', 'C', 'B', 'C', 'C', 'B', 'B', 'C', 'C', 'D', 'C', 'B', 'E', 'A', 'D', 'C'] %}
 
 {{ config(
@@ -9,6 +10,7 @@
 
 -- The sheets have the same layout, so stack them first and clean the shared
 -- columns once. form_tag preserves which test each response came from.
+-- Stack pre-test and post-test sheet responses.
 with recursive source_rows as (
     select
         row_number() over () as source_row_id,
@@ -27,6 +29,7 @@ with recursive source_rows as (
 
 -- Clean display fields and compute matching keys once. Question responses are
 -- normalized to uppercase letters so whitespace/case do not affect scoring.
+-- Clean raw fields and calculate matching keys.
 keyed as (
     select
         concat(form_tag, '_', source_row_id) as record_id,
@@ -63,6 +66,7 @@ keyed as (
 
 -- Score from the answer key rather than trusting the submitted Skor column.
 -- The denominator is always 19, so unanswered questions count as incorrect.
+-- Count correct and answered quiz items.
 scored as (
     select
         *,
@@ -79,6 +83,7 @@ scored as (
     from keyed
 ),
 
+-- Standardize scores, phones, gender, education, and roles.
 normalized as (
     select
         *,
@@ -112,12 +117,14 @@ normalized as (
 
 -- Apply the cohort 12 name-unification approach: spelling variants can only
 -- link when they share phone or geography and are also sufficiently similar.
+-- Collect distinct names with their identity context.
 name_observations as (
     select distinct nama_key, phone_key, desa_key, kabupaten_key, kecamatan_key, puskesmas_key
     from normalized
     where nama_key is not null
 ),
 
+-- Link likely spelling variants of the same person's name.
 name_pairs as (
     select distinct a.nama_key, least(a.nama_key, b.nama_key) as root
     from name_observations a
@@ -138,6 +145,7 @@ name_pairs as (
         )
 ),
 
+-- Traverse linked names into variant groups.
 name_groups (nama_key, root) as (
     select nama_key, root from name_pairs
     union
@@ -146,12 +154,14 @@ name_groups (nama_key, root) as (
     join name_groups ng on np.root = ng.nama_key
 ),
 
+-- Assign one stable group key to each name.
 name_group_map as (
     select nama_key, min(root) as name_group_key
     from name_groups
     group by nama_key
 ),
 
+-- Select one canonical display name per group.
 with_unified as (
     select
         n.*,

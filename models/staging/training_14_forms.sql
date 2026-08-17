@@ -1,3 +1,4 @@
+-- Model: Combines cohort 14 Forms and Sheets responses into one schema.
 {{ config(materialized='table', tags=['staging', 'training_14', 'training']) }}
 
 select

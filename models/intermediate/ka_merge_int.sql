@@ -1,3 +1,4 @@
+-- Model: Unifies current and historical KA module participation records.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,6 +6,7 @@
     tags=["ka"]
 ) }}
 
+-- Stack cleaned records from the three current KA modules.
 with recursive current_modules_raw as (
     select
         email,
@@ -68,12 +70,14 @@ with recursive current_modules_raw as (
     from {{ ref('ka_modul_3_clean') }}
 ),
 
+-- Collect distinct current participant identities.
 distinct_names as (
     select distinct clean_name, name, district, email, whatsapp
     from current_modules_raw
     where clean_name is not null
 ),
 
+-- Normalize names for similarity matching.
 normalized_names as (
     select
         clean_name,
@@ -92,6 +96,7 @@ normalized_names as (
     from distinct_names
 ),
 
+-- Link likely name variants using identity evidence.
 name_pairs as (
     select
         a.clean_name,
@@ -114,6 +119,7 @@ name_pairs as (
         )
 ),
 
+-- Traverse linked names to find related variants.
 name_groups (clean_name, root) as (
     select clean_name, root from name_pairs
     union
@@ -122,6 +128,7 @@ name_groups (clean_name, root) as (
     join name_groups ng on np.root = ng.clean_name
 ),
 
+-- Assign a group key to matched and unmatched names.
 name_groups_final as (
     select clean_name, min(root) as name_group_key
     from (
@@ -144,6 +151,7 @@ name_groups_final as (
     )
 ),
 
+-- Select one representative name per participant group.
 with_unified as (
     select
         cm.*,
@@ -162,6 +170,7 @@ with_unified as (
     left join name_groups_final ngf on cm.clean_name = ngf.clean_name
 ),
 
+-- Rank duplicate module submissions by recency.
 ranked as (
     select
         *,
@@ -177,6 +186,7 @@ ranked as (
     from with_unified
 ),
 
+-- Standardize historical KA records.
 past_quarter as (
     select
         nullif(trim("email"), '') as email,
@@ -203,6 +213,7 @@ past_quarter as (
     where nullif(trim("date"), '')::date < date '2026-04-01'
 ),
 
+-- Standardize current KA records and mark latest submissions.
 current_modules as (
     select
         email,

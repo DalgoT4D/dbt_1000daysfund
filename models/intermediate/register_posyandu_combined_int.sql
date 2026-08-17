@@ -1,3 +1,4 @@
+-- Model: Adds canonical parent identities to combined Posyandu records.
 {{ config(materialized='table', tags=['intermediate', 'parent', 'register_posyandu']) }}
 
 select

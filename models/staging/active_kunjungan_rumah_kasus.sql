@@ -1,14 +1,17 @@
+-- Model: Cleans, labels, and deduplicates active Kobo home visits.
 {{ config(materialized='table') }}
 
 -- Grain: one row per Kobo submission (latest edit per meta/rootUuid).
 -- Codes are resolved to labels from the XLSForm `choices` sheet; the raw codes
 -- are kept only inside `typed_data` and are not exposed in the final select.
 
+-- Parse each nonblank raw Kobo payload as JSON.
 with source_data as (
     select case when data is null or trim(data::text) = '' then null::jsonb else data::jsonb end as json_payload
     from {{ source('raw_kobo', 'ACTIVEKunjungan_Rumah_Kasus') }}
 ),
 
+-- Cast raw fields and retain codes needed for label resolution.
 typed_data as (
     select
         nullif(json_payload ->> '_id', '')::bigint as submission_id,
@@ -84,6 +87,7 @@ typed_data as (
     where json_payload is not null
 ),
 
+-- Keep the latest edit for each Kobo submission root.
 deduped as (
     -- Kobo edits keep meta/rootUuid stable and issue a new instanceID
     select distinct on (meta_root_uuid) *

@@ -1,3 +1,4 @@
+-- Model: Cleans and scores cohort 14 Sheets responses.
 {% set answer_key = ['D', 'B', 'D', 'D', 'B', 'C', 'B', 'D', 'D', 'B', 'B', 'B', 'C', 'A', 'C', 'D', 'A', 'B', 'C', 'B', 'D'] %}
 
 {{ config(
@@ -7,6 +8,7 @@
     tags=['staging', 'training_14', 'training']
 ) }}
 
+-- Stack aligned pre-test and post-test sheet responses.
 with source_rows as (
     {% for form_tag, relation in {
         'pre': source('raw_sheets', 'training_14_sheets_pre'),
@@ -39,6 +41,7 @@ with source_rows as (
     {% endfor %}
 ),
 
+-- Clean raw fields and normalize quiz answers.
 cleaned as (
     select
         concat(form_tag, '_', source_row_id) as record_id,
@@ -64,6 +67,7 @@ cleaned as (
     from source_rows
 ),
 
+-- Calculate participant matching keys.
 keyed as (
     select
         *,
@@ -79,6 +83,7 @@ keyed as (
     from cleaned
 ),
 
+-- Count correct and answered quiz items.
 scored as (
     select
         *,
@@ -87,6 +92,7 @@ scored as (
     from keyed
 ),
 
+-- Standardize scores, phones, gender, education, and roles.
 normalized as (
     select
         *,

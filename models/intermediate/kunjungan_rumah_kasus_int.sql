@@ -1,3 +1,4 @@
+-- Model: Links home-visit assessments to canonical parent identities.
 {{ config(materialized='table', tags=['intermediate', 'parent', 'ACTIVEKunjungan_Rumah_Kasus']) }}
 
 select

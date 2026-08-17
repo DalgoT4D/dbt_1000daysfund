@@ -1,3 +1,4 @@
+-- Model: Combines active and historical Posyandu monitoring scores.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,6 +6,7 @@
     tags=["score_monitoring_posyandu", "staging", "monitoring_posyandu"]
 ) }}
 
+-- Select scored records from the active monitoring form.
 with active as (
 
     select
@@ -28,6 +30,7 @@ with active as (
 
 ),
 
+-- Cast historical monitoring scores to the shared schema.
 old as (
     select
         nullif(btrim(source::text), '')                        as source,
@@ -50,6 +53,7 @@ old as (
 
 ),
 
+-- Stack historical and active monitoring records.
 unioned as (
 
     select * from old

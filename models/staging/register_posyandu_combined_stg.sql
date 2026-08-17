@@ -1,3 +1,4 @@
+-- Model: Combines maternal and child Posyandu records from all sources.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -18,6 +19,7 @@
 
 with
 
+-- Align self-collected maternal records to the shared schema.
 reg_bumil as (
 
     select
@@ -84,6 +86,7 @@ reg_bumil as (
 
 ),
 
+-- Align self-collected child records to the shared schema.
 reg_baduta as (
 
     select
@@ -150,6 +153,7 @@ reg_baduta as (
 
 ),
 
+-- Align EPUS maternal records to the shared schema.
 epus_bumil as (
 
     select
@@ -216,6 +220,7 @@ epus_bumil as (
 
 ),
 
+-- Align EPUS child records to the shared schema.
 epus_baduta as (
 
     select
@@ -282,6 +287,7 @@ epus_baduta as (
 
 ),
 
+-- Align government maternal records to the shared schema.
 pem_bumil as (
 
     select
@@ -349,6 +355,7 @@ pem_bumil as (
 
 ),
 
+-- Align government child records to the shared schema.
 pem_baduta as (
 
     select
@@ -416,6 +423,7 @@ pem_baduta as (
 
 ),
 
+-- Stack all aligned Posyandu records.
 unioned as (
 
     select * from reg_bumil

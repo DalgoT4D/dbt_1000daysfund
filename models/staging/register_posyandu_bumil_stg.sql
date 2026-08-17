@@ -1,3 +1,4 @@
+-- Model: Cleans maternal Posyandu records and derives pregnancy indicators.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,12 +6,14 @@
     tags=["register_posyandu", "staging", "parent"]
 ) }}
 
+-- Load raw maternal register records.
 with source as (
 
     select * from {{ source('raw_sheets', 'register_posyandu_bumil') }}
 
 ),
 
+-- Cast raw maternal register fields to analysis-ready types.
 typed as (
 
     select
@@ -62,6 +65,7 @@ typed as (
 
 ),
 
+-- Derive gestational age and trimester.
 gestational_age as (
 
     select
@@ -80,6 +84,7 @@ gestational_age as (
 
 ),
 
+-- Calculate iron-folic-acid adherence.
 ifa as (
 
     select
@@ -95,6 +100,7 @@ ifa as (
 
 ),
 
+-- Derive maternal health and care checks.
 checks as (
 
     select
@@ -129,6 +135,7 @@ checks as (
 
 ),
 
+-- Select the standardized maternal output columns.
 final as (
 
     select

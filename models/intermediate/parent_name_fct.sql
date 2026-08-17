@@ -1,5 +1,7 @@
+-- Model: Standardizes parent-name variants across register and home-visit data.
 {{ config(materialized='table', tags=['intermediate', 'parent', 'register_posyandu']) }}
 
+-- Collect distinct parent-name variants and normalized keys.
 with recursive names as (
     select distinct nullif(trim(parent_name), '') as name_variant,
         {{ profile_name_key('parent_name') }} as name_key
@@ -12,6 +14,7 @@ with recursive names as (
     where nullif(trim(parent_name), '') is not null
 ),
 
+-- Link name keys that are sufficiently similar.
 name_edges as (
     select a.name_key as source_key, b.name_key as target_key
     from names a
@@ -21,12 +24,14 @@ name_edges as (
             or b.name_key like a.name_key || ' %')
 ),
 
+-- Make every name link traversable in both directions.
 directed_edges as (
     select source_key, target_key from name_edges
     union all
     select target_key, source_key from name_edges
 ),
 
+-- Traverse linked names into connected components.
 components (root_key, name_key) as (
     select name_key, name_key from names
     union
@@ -35,12 +40,14 @@ components (root_key, name_key) as (
     join directed_edges e on e.source_key = c.name_key
 ),
 
+-- Assign one stable group key to each name.
 grouped as (
     select name_key, min(root_key) as group_key
     from components
     group by name_key
 ),
 
+-- Choose the longest variant as each group's canonical name.
 canonical as (
     select
         g.group_key,

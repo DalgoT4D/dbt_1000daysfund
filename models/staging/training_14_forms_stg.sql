@@ -1,3 +1,4 @@
+-- Model: Cleans and standardizes cohort 14 Forms responses.
 {% set pre_relation = source('raw_sheets', 'training_14_forms_pre') %}
 {% set post_relation = source('raw_sheets', 'training_14_forms_post') %}
 
@@ -8,6 +9,7 @@
     tags=['staging', 'training_14', 'training']
 ) }}
 
+-- Stack aligned pre-test and post-test form responses.
 with source_rows as (
     {% for form_tag, relation in {'pre': pre_relation, 'post': post_relation}.items() %}
     select
@@ -32,6 +34,7 @@ with source_rows as (
     {% endfor %}
 ),
 
+-- Clean raw fields and calculate matching keys.
 keyed as (
     select
         concat(form_tag, '_', source_row_id) as record_id,
@@ -62,6 +65,7 @@ keyed as (
     from source_rows
 ),
 
+-- Standardize scores, phones, gender, education, and roles.
 normalized as (
     select
         *,

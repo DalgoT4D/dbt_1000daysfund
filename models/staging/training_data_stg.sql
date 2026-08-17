@@ -1,3 +1,4 @@
+-- Model: Combines participant outcomes across all training cohorts.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,6 +6,7 @@
     tags=["training_data_stg", "staging", "training"]
 ) }}
 
+-- Load training 01 participant outcomes.
 with training_01 as (
     select
         'Pelatihan ASI'::text  as training_type,
@@ -13,6 +15,7 @@ with training_01 as (
     from {{ source('raw_sheets', 'training_01_participants') }}
 ),
 
+-- Load training 02 participant outcomes.
 training_02 as (
     select
         'Growth Counseling'::text  as training_type,
@@ -21,6 +24,7 @@ training_02 as (
     from {{ source('raw_sheets', 'training_02_participants') }}
 ),
 
+-- Load training 03 participant outcomes.
 training_03 as (
     select
         'Fasilitasi Kelas Ibu'::text  as training_type,
@@ -29,6 +33,7 @@ training_03 as (
     from {{ source('raw_sheets', 'training_03_participants') }}
 ),
 
+-- Load training 04 participant outcomes.
 training_04 as (
     select
         'Stunting 101'::text  as training_type,
@@ -37,6 +42,7 @@ training_04 as (
     from {{ source('raw_sheets', 'training_04_participants') }}
 ),
 
+-- Load training 05a participant outcomes.
 training_05a as (
     select
         'Konseling Nutrisi'::text  as training_type,
@@ -45,6 +51,7 @@ training_05a as (
     from {{ source('raw_sheets', 'training_05a_participants') }}
 ),
 
+-- Load training 05b participant outcomes.
 training_05b as (
     select
         'Konseling Nutrisi'::text  as training_type,
@@ -53,6 +60,7 @@ training_05b as (
     from {{ source('raw_sheets', 'training_05b_participants') }}
 ),
 
+-- Load training 06 participant outcomes.
 training_06 as (
     select
         'Manajemen Posyandu'::text  as training_type,
@@ -61,6 +69,7 @@ training_06 as (
     from {{ source('raw_sheets', 'training_06_participants') }}
 ),
 
+-- Load training 07 participant outcomes.
 training_07 as (
     select
         'Fasilitasi dan Komunikasi'::text  as training_type,
@@ -69,6 +78,7 @@ training_07 as (
     from {{ source('raw_sheets', 'training_07_participants') }}
 ),
 
+-- Load training 09a participant outcomes.
 training_09a as (
     select
         'ICCM'::text  as training_type,
@@ -77,6 +87,7 @@ training_09a as (
     from {{ source('raw_sheets', 'training_09a_participants') }}
 ),
 
+-- Load training 09b participant outcomes.
 training_09b as (
     select
         'ICCM'::text  as training_type,
@@ -85,6 +96,7 @@ training_09b as (
     from {{ source('raw_sheets', 'training_09b_participants') }}
 ),
 
+-- Load training 10 participant outcomes.
 training_10 as (
     select
         'ASI-MPASI'::text  as training_type,
@@ -93,6 +105,7 @@ training_10 as (
     from {{ source('raw_sheets', 'training_10_participants') }}
 ),
 
+-- Load training 11 participant outcomes.
 training_11 as (
     select
         'Konseling Ibu Hamil'::text  as training_type,
@@ -101,6 +114,7 @@ training_11 as (
     from {{ source('raw_sheets', 'training_11_participants') }}
 ),
 
+-- Stack historical training participant outcomes.
 combined as (
     select * from training_01
     union all select * from training_02

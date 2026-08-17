@@ -1,5 +1,7 @@
+-- Model: Flattens Kobo cadre-functionality assessments with location labels.
 {{ config(materialized='table', tags=['kobo']) }}
 
+-- Parse each nonblank raw Kobo payload as JSON.
 with source_data as (
 
     select

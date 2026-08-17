@@ -1,3 +1,4 @@
+-- Model: Summarizes pre/post accuracy by training quiz item.
 -- ============================================================================
 -- Training quiz item analysis  (pre vs post, forms + sheets combined)
 -- Answer key lives in reference.training_answer.
@@ -14,6 +15,7 @@
     tags=["training_answers_stg", "staging", "training"]
 ) }}
 
+-- Map training numbers to display names.
 with training_meta (training, training_name) as (
     values
         (12, 'Kelompok Kerja'),
@@ -21,6 +23,7 @@ with training_meta (training, training_name) as (
         (14, 'ASI, MPASI, ICCM')
 ),
 
+-- Normalize the reference answer key.
 answer_key as (
     select
         form_code, source_type, training, question_no, question_label,
@@ -28,6 +31,7 @@ answer_key as (
     from reference.training_answer
 ),
 
+-- Unpivot and normalize quiz responses across cohorts.
 responses as (
     -- training_12_pre  (20 questions)
     select '12' as form_code, 12 as training, 'pre' as stage,
@@ -300,6 +304,7 @@ responses as (
     ) as v(question_no, answer_norm)
 ),
 
+-- Mark each response as answered and correct.
 scored as (
     select
         r.training, r.stage, r.question_no,
@@ -310,6 +315,7 @@ scored as (
         on k.form_code = r.form_code and k.question_no = r.question_no
 ),
 
+-- Select one display label per quiz item.
 labels as (
     select training, question_no,
         coalesce(max(question_label) filter (where source_type = 'forms'),
@@ -318,6 +324,7 @@ labels as (
     group by 1, 2
 ),
 
+-- Aggregate pre-test and post-test accuracy counts.
 agg as (
     select training, question_no,
         count(*) filter (where stage = 'pre'  and is_answered) as n_pre,

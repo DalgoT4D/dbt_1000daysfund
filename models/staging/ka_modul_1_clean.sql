@@ -1,3 +1,4 @@
+-- Model: Cleans KA module 1 attendance and corrects district names.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -5,10 +6,12 @@
     tags=["training_data_stg", "staging", "ka"]
 ) }}
 
+-- Load raw KA module 1 records.
 with source as (
     select * from {{ source('raw_sheets', 'ka_modul_01') }}
 ),
 
+-- Load approved district-name corrections.
 district_lookup as (
     select
         typo_key,
@@ -16,6 +19,7 @@ district_lookup as (
     from {{ ref('ka_district_lookup_int') }}
 ),
 
+-- Parse and normalize attendance fields.
 parsed as (
     select
         cast("Timestamp" as timestamp) as timestamp_raw,
@@ -45,12 +49,14 @@ parsed as (
     from source
 ),
 
+-- Keep records from valid reporting quarters.
 filtered_quarters as (
     select *
     from parsed
     where date >= date '2026-04-01'
 ),
 
+-- Apply approved district-name corrections.
 district_corrected as (
     select
         p.*,

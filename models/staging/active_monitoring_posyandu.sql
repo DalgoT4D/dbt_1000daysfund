@@ -1,7 +1,9 @@
 -- Updated: 2026-08-05
 
+-- Model: Cleans active Posyandu monitoring submissions and calculates scores.
 {{ config(materialized='table') }}
 
+-- Parse each nonblank raw Kobo payload as JSON.
 with source_data as (
 
     select
@@ -13,6 +15,7 @@ with source_data as (
 
 ),
 
+-- Cast monitoring fields from the JSON payload.
 typed_data as (
 
     select
@@ -77,6 +80,7 @@ typed_data as (
 
 ),
 
+-- Resolve location labels and standardize output columns.
 final as (
 
     select
@@ -149,6 +153,7 @@ final as (
 
 ),
 
+-- Calculate section and overall monitoring percentages.
 scored as (
  
     select

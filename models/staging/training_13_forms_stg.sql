@@ -1,3 +1,4 @@
+-- Model: Cleans and standardizes cohort 13 Forms responses.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -7,6 +8,7 @@
 
 -- Select only the agreed form columns before combining pre- and post-test
 -- responses. form_tag preserves the source side for downstream pairing.
+-- Stack aligned pre-test and post-test form responses.
 with recursive source_rows as (
     select
         row_number() over () as source_row_id,
@@ -50,6 +52,7 @@ with recursive source_rows as (
 ),
 
 -- Normalize blanks and calculate reusable matching keys once.
+-- Clean raw fields and calculate matching keys.
 keyed as (
     select
         concat(form_tag, '_', source_row_id) as record_id,
@@ -87,6 +90,7 @@ keyed as (
 ),
 
 -- Apply the same field standardization used by training_12_forms_stg.
+-- Standardize scores, phones, gender, education, and roles.
 normalized as (
     select
         *,
@@ -124,6 +128,7 @@ normalized as (
     from keyed
 ),
 
+-- Collect distinct names with their identity context.
 name_observations as (
     select distinct nama_key, phone_key, desa_key, kabupaten_key, kecamatan_key, puskesmas_key
     from normalized
@@ -131,6 +136,7 @@ name_observations as (
 ),
 
 -- Name variants may link only when both identity context and spelling agree.
+-- Link likely spelling variants of the same person's name.
 name_pairs as (
     select distinct a.nama_key, least(a.nama_key, b.nama_key) as root
     from name_observations a
@@ -151,6 +157,7 @@ name_pairs as (
         )
 ),
 
+-- Traverse linked names into variant groups.
 name_groups (nama_key, root) as (
     select nama_key, root from name_pairs
     union
@@ -159,12 +166,14 @@ name_groups (nama_key, root) as (
     join name_groups ng on np.root = ng.nama_key
 ),
 
+-- Assign one stable group key to each name.
 name_group_map as (
     select nama_key, min(root) as name_group_key
     from name_groups
     group by nama_key
 ),
 
+-- Select one canonical display name per group.
 with_unified as (
     select
         n.*,
