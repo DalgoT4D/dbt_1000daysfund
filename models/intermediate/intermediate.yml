@@ -47,12 +47,22 @@ models:
       - name: match_tier
         description: Identity rule used to pair pre- and post-test submissions.
 
+  - name: reference_district_clean
+    description: >
+      Canonical district labels sourced from `reference."Kabupatenkota"` with
+      the redundant "Kabupaten"/"Kab." prefix stripped. The "Kota" prefix is
+      kept since it distinguishes a city from a district of the same base
+      name.
+    columns:
+      - name: district
+        description: Canonical district label, without a "Kabupaten" prefix.
+
   - name: ka_district_lookup_int
     description: >
       Intermediate lookup table for district normalization across KA modules 1,
       2, and 3. It combines the existing `reference.district_typos` mappings
       with conservative fuzzy-match suggestions derived from raw sheet district
-      values and the canonical district list in `reference."Kabupatenkota"`.
+      values and the canonical district list in `reference_district_clean`.
       The model output is used downstream for district cleanup, and its
       post-hooks update blank or missing rows in `reference.district_typos`.
     columns:
@@ -67,7 +77,7 @@ models:
       - name: district
         description: >
           Standardized district name selected from the reference typo table or
-          matched from `reference."Kabupatenkota"`.
+          matched from `reference_district_clean`.
       - name: mapping_source
         description: >
           Indicates whether the mapping came from the existing reference typo

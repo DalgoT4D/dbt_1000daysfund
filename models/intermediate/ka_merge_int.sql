@@ -1,4 +1,36 @@
--- Model: Unifies current and historical KA module participation records.
+-- Model: one unified table of every KA participation record, current and
+-- historical.
+--
+-- This combines two very different sources into one consistent shape:
+--   - modules 1-3 (current, Q2 2026 onward): people can submit under slightly
+--     different names each time (typos, nicknames, adding a role suffix),
+--     so before we can dedupe or count participation we first need to figure
+--     out which submitted names actually belong to the same person.
+--   - ka_past_quarter (historical, before Q2 2026): already one row per
+--     person, but its district values were never run through district
+--     correction, unlike the current modules.
+--
+-- The steps below, in order:
+--   1. current_modules_raw        - stack modules 1, 2, 3 into one set of rows.
+--   2. distinct_names -> normalized_names -> name_pairs -> name_groups ->
+--      name_groups_final -> with_unified
+--                                  - identity resolution: decide which
+--                                    submitted names are the same person
+--                                    (matched by shared district/email/
+--                                    whatsapp plus a close name match), and
+--                                    pick one representative name per person
+--                                    (`unified_name`).
+--   3. ranked                      - drop duplicate submissions, keeping the
+--                                    most recent one per person per module
+--                                    per quarter.
+--   4. district_lookup -> past_quarter_raw -> past_quarter
+--                                  - load the historical records and correct
+--                                    their district values using the same
+--                                    lookup table modules 1-3 already use.
+--   5. current_modules             - finalize the current-module records
+--                                    (score rounding, is_certified/is_latest
+--                                    flags) to match past_quarter's shape.
+--   6. Final select                - union both sides into one output.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -6,7 +38,8 @@
     tags=["ka"]
 ) }}
 
--- Stack cleaned records from the three current KA modules.
+-- Step 1: stack the three current modules into one set of rows, tagging each
+-- with which module it came from.
 with recursive current_modules_raw as (
     select
         email,
@@ -70,14 +103,18 @@ with recursive current_modules_raw as (
     from {{ ref('ka_modul_3_clean') }}
 ),
 
--- Collect distinct current participant identities.
+-- Step 2 (identity resolution): every distinct name+district+contact
+-- combination seen in the current modules - the raw material for figuring
+-- out which of these are actually the same person.
 distinct_names as (
     select distinct clean_name, name, district, email, whatsapp
     from current_modules_raw
     where clean_name is not null
 ),
 
--- Normalize names for similarity matching.
+-- Strip down to a plain lowercase-letters-only version of each name, so two
+-- names that differ only by punctuation/numbers/extra whitespace can still
+-- be compared for similarity.
 normalized_names as (
     select
         clean_name,
@@ -96,7 +133,11 @@ normalized_names as (
     from distinct_names
 ),
 
--- Link likely name variants using identity evidence.
+-- Pair up two names as "likely the same person" only when they share hard
+-- identity evidence (same district, or same email, or same whatsapp number)
+-- AND the names themselves are a close match - either textually similar, or
+-- one is the other with something appended (e.g. "Adea" vs "Adea O").
+-- Matching name alone, or identity evidence alone, isn't enough on its own.
 name_pairs as (
     select
         a.clean_name,
@@ -119,7 +160,10 @@ name_pairs as (
         )
 ),
 
--- Traverse linked names to find related variants.
+-- name_pairs only links names directly to each other (A-B, B-C), not
+-- transitively (A-C). This recursive CTE walks those chains to find, for
+-- every linked name, the single earliest/alphabetically-first name in its
+-- whole chain - that becomes the shared group key for everyone in the chain.
 name_groups (clean_name, root) as (
     select clean_name, root from name_pairs
     union
@@ -128,7 +172,10 @@ name_groups (clean_name, root) as (
     join name_groups ng on np.root = ng.clean_name
 ),
 
--- Assign a group key to matched and unmatched names.
+-- Two passes of chain-following can still leave a name pointing at a root
+-- that itself points further ("A" -> "B" -> "C"); this collapses that down
+-- to one final group key per name. Names with no match at all become their
+-- own group of one.
 name_groups_final as (
     select clean_name, min(root) as name_group_key
     from (
@@ -151,7 +198,10 @@ name_groups_final as (
     )
 ),
 
--- Select one representative name per participant group.
+-- Pick one representative name per identity group (the longest name in the
+-- group, i.e. most complete/least likely to be a shortened nickname, earliest
+-- submitted as the tiebreaker) and stamp it onto every row in that group as
+-- `unified_name`.
 with_unified as (
     select
         cm.*,
@@ -170,7 +220,10 @@ with_unified as (
     left join name_groups_final ngf on cm.clean_name = ngf.clean_name
 ),
 
--- Rank duplicate module submissions by recency.
+-- Step 3: the same person can submit the same module more than once in a
+-- quarter (retakes, corrections). Number each person's submissions per
+-- module/quarter newest-first; only rn = 1 (kept below as is_latest) is the
+-- one that counts as their current record.
 ranked as (
     select
         *,
@@ -186,15 +239,24 @@ ranked as (
     from with_unified
 ),
 
--- Standardize historical KA records.
-past_quarter as (
+-- Step 4: same typo -> district correction table the current modules already
+-- use in staging (ka_modul_1/2/3_clean) - needed here because ka_past_quarter
+-- is read directly from source and has never been through it.
+district_lookup as (
+    select typo_key, district
+    from {{ ref('ka_district_lookup_int') }}
+),
+
+-- Parse and type-cast the historical sheet. district here is still the raw,
+-- uncorrected value (see district_raw) - correction happens in the next CTE.
+past_quarter_raw as (
     select
         nullif(trim("email"), '') as email,
         nullif(trim("name"), '') as name,
         null::varchar as unified_name,
         nullif(trim("role"), '') as role,
         nullif(trim("whatsapp"), '') as whatsapp,
-        nullif(trim("district"), '') as district,
+        nullif(trim("district"), '') as district_raw,
         null::varchar as province,
         nullif(trim("puskesmas"), '') as puskesmas,
         nullif(trim("village"), '') as village,
@@ -213,7 +275,35 @@ past_quarter as (
     where nullif(trim("date"), '')::date < date '2026-04-01'
 ),
 
--- Standardize current KA records and mark latest submissions.
+-- Look up each raw district value; use the corrected district when there's
+-- an approved/suggested match, otherwise keep the raw value as typed.
+past_quarter as (
+    select
+        pq.email,
+        pq.name,
+        pq.unified_name,
+        pq.role,
+        pq.whatsapp,
+        coalesce(dl.district, pq.district_raw) as district,
+        pq.province,
+        pq.puskesmas,
+        pq.village,
+        pq.year,
+        pq.quarter,
+        pq.date,
+        pq.score,
+        pq.is_certified,
+        pq.modul,
+        pq.program,
+        pq.is_latest
+    from past_quarter_raw pq
+    left join district_lookup dl on lower(trim(pq.district_raw)) = dl.typo_key
+),
+
+-- Step 5: finish the current-module records so their columns line up
+-- one-for-one with past_quarter's - round scores to whole percentages, derive
+-- is_certified from the score, and mark each person's most recent submission
+-- (rn = 1 from `ranked`) as is_latest.
 current_modules as (
     select
         email,
@@ -236,6 +326,8 @@ current_modules as (
     from ranked
 )
 
+-- Step 6: the final output - historical records plus current records, in one
+-- shared shape.
 select * from past_quarter
 union all
 select * from current_modules
