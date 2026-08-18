@@ -1,15 +1,14 @@
 -- Model: the official district catalog, cleaned up for use as a matching
 -- reference.
---
--- reference."Kabupatenkota" is the raw source list and labels every entry
--- with its administrative type, e.g. "Kabupaten Badung" or "Kota Denpasar".
--- "Kabupaten" just means "district" - it's redundant on every row that has
--- it, so we drop it. "Kota" ("city") is kept, because it's the only thing
--- distinguishing a city from a district that happens to share the same base
--- name (e.g. "Kota Denpasar" vs a hypothetical "Kabupaten Denpasar").
---
--- This is the canonical district list that ka_district_lookup_int fuzzy-
--- matches typed-in district values against.
+-- Takes the raw official district catalog (reference."Kabupatenkota") and cleans up its labels
+-- for use as a matching reference elsewhere. Specifically, it strips the redundant "Kabupaten"/"Kab." 
+-- prefix from every district name — "Kabupaten" just means "district," so it adds nothing 
+-- — while deliberately keeping the "Kota" ("city") prefix, because that's the only thing 
+-- distinguishing an actual city from a district that might share the same base name 
+-- (e.g. "Kota Denpasar" vs. a hypothetical "Kabupaten Denpasar"). 
+-- Output: one clean, de-duplicated district name per row — this is the canonical list 
+-- everything else matches against.
+
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
