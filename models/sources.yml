@@ -12,6 +12,8 @@ sources:
         identifier: ACTIVEMonitoring_Posyandu
       - name: ACTIVEKunjungan_Rumah_Kasus
         identifier: ACTIVEKunjungan_Rumah_Kasus
+      - name: ACTIVEForm_Asesmen_Nakes
+        identifier: ACTIVEForm_Asesmen_Nakes
   
   
   - name: raw_sheets
@@ -25,6 +27,12 @@ sources:
         identifier: 'ka_modul_02'
       - name: 'ka_modul_03'
         identifier: 'ka_modul_03'
+      - name: 'ka_sp_modul_01'
+        identifier: 'ka_sp_modul_01'
+      - name: 'ka_sp_modul_02'
+        identifier: 'ka_sp_modul_02'
+      - name: 'ka_sp_modul_03'
+        identifier: 'ka_sp_modul_03'
       - name: 'ka_past_quarter'
         identifier: 'ka_past_quarter'
       - name: 'training_01_participants'

@@ -1,4 +1,4 @@
--- Model: Cleans KA module 1 attendance and corrects district names.
+
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -6,9 +6,35 @@
     tags=["training_data_stg", "staging", "ka"]
 ) }}
 
--- Load raw KA module 1 records.
+-- Load raw KA module 1 records from both response sheets.
 with source as (
-    select * from {{ source('raw_sheets', 'ka_modul_01') }}
+    select
+        "Timestamp",
+        "Nama",
+        "Email_Address",
+        "Peran_Anda",
+        "Nomor_HP_WA",
+        "Kabupaten_Kota",
+        "Provinsi",
+        "Puskesmas",
+        "Desa_Kelurahan",
+        "Score"
+    from {{ source('raw_sheets', 'ka_modul_01') }}
+
+    union all
+
+    select
+        "Timestamp",
+        "Nama",
+        "Email_Address",
+        "Peran_Anda",
+        "Nomor_HP_WA",
+        "Kabupaten_Kota",
+        "Provinsi",
+        "Puskesmas",
+        "Desa_Kelurahan",
+        "Score"
+    from {{ source('raw_sheets', 'ka_sp_modul_01') }}
 ),
 
 -- Load approved district-name corrections.
