@@ -84,12 +84,6 @@ typed_data as (
 final as (
 
     select
-        typed_data.submission_id,
-        typed_data.submission_start_at,
-        typed_data.submission_end_at,
-        typed_data.submission_time,
-        typed_data.geolocation_latitude,
-        typed_data.geolocation_longitude,
         ref_prov.label                                                                    as provinsi,
         ref_kab.label                                                                     as kota_kabupaten,
         ref_kec.label                                                                     as kecamatan,
@@ -98,7 +92,9 @@ final as (
         ref_pyd.label                                                                     as posyandu,
         typed_data.enumerator_peran,
         typed_data.enumerator_nama_lain,
-        typed_data.kunjungan_tanggal,
+        typed_data.kunjungan_tanggal                                                      as kunjungan_tanggal,
+        extract(year from kunjungan_tanggal)::int as year,
+        extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
 
 
         -- Preparation
@@ -140,7 +136,13 @@ final as (
         -- Evaluation: Conducted at the end of the Posyandu session.
         typed_data.langkah_evaluasi                                                             as langkah_evaluasi,
 
-        typed_data.penutup_catatan
+        typed_data.penutup_catatan,
+        typed_data.submission_id,
+        typed_data.submission_start_at,
+        typed_data.submission_end_at,
+        typed_data.submission_time,
+        typed_data.geolocation_latitude,
+        typed_data.geolocation_longitude
 
     from typed_data
 

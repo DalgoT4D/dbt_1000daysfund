@@ -33,14 +33,6 @@ with source_data as (
 typed_data as (
 
     select
-        nullif(json_payload ->> '_id', '')::bigint                       as submission_id,
-        nullif(json_payload ->> '_uuid', '')                             as submission_uuid,
-        nullif(json_payload ->> 'meta/rootUuid', '')                     as meta_root_uuid,
-        nullif(json_payload ->> '__version__', '')                       as form_version,
-        nullif(json_payload ->> '_submission_time', '')::timestamptz     as submission_time,
-        nullif(json_payload ->> 'start', '')::timestamptz                as submission_start_at,
-        nullif(json_payload ->> 'end', '')::timestamptz                  as submission_end_at,
-
         -- pembukaan
         nullif(btrim(json_payload ->> 'pembukaan/peserta_nama'), '')     as peserta_nama,
         nullif(json_payload ->> 'pembukaan/tanggal', '')::date           as asesmen_tanggal,
@@ -77,7 +69,16 @@ typed_data as (
         nullif(json_payload ->> 'group_b/group_b_2/group_b_2_4', '')::smallint as b_2_4,
         nullif(json_payload ->> 'group_b/group_b_3/group_b_3_1', '')::smallint as b_3_1,
         nullif(json_payload ->> 'group_b/group_b_3/group_b_3_2', '')::smallint as b_3_2,
-        nullif(json_payload ->> 'group_b/group_b_3/group_b_3_3', '')::smallint as b_3_3
+        nullif(json_payload ->> 'group_b/group_b_3/group_b_3_3', '')::smallint as b_3_3,
+
+        -- metadata
+        nullif(json_payload ->> '_id', '')::bigint                       as submission_id,
+        nullif(json_payload ->> '_uuid', '')                             as submission_uuid,
+        nullif(json_payload ->> 'meta/rootUuid', '')                     as meta_root_uuid,
+        nullif(json_payload ->> '__version__', '')                       as form_version,
+        nullif(json_payload ->> '_submission_time', '')::timestamptz     as submission_time,
+        nullif(json_payload ->> 'start', '')::timestamptz                as submission_start_at,
+        nullif(json_payload ->> 'end', '')::timestamptz                  as submission_end_at
 
     from source_data
     where json_payload is not null
@@ -188,15 +189,10 @@ scored as (
 final as (
 
     select
-        d.submission_id,
-        d.submission_uuid,
-        d.form_version,
-        d.submission_time,
-        d.submission_start_at,
-        d.submission_end_at,
-
         d.peserta_nama,
-        d.asesmen_tanggal,
+        d.asesmen_tanggal                                       as asesmen_tanggal,
+        extract(year from asesmen_tanggal)::int as year,
+        extract(year from asesmen_tanggal)::int || '-Q' || extract(quarter from asesmen_tanggal)::int as quarter,
         coalesce(d.penilai_nama_lain, d.penilai_nama_kode)      as penilai_nama,
 
         ref_prov.label                                          as provinsi,
@@ -226,7 +222,14 @@ final as (
 
         s.overall_perc,
 
-        d.catatan
+        d.catatan,
+
+        d.submission_id,
+        d.submission_uuid,
+        d.form_version,
+        d.submission_time,
+        d.submission_start_at,
+        d.submission_end_at
 
     from deduped d
     left join scored s

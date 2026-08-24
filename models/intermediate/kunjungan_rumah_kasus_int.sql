@@ -41,5 +41,5 @@ select
     r.penutup_geolokasi,
     r.penutup_durasi
 
-from {{ ref('asesmen_kunjungan_rumah_kasus') }} r
+from {{ ref('active_kunjungan_rumah_kasus') }} r
 join {{ ref('parent_name_fct') }} m on m.name_variant = r.pengasuh_nama

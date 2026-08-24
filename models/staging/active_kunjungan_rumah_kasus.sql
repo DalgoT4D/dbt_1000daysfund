@@ -97,7 +97,9 @@ deduped as (
 
 select
     submission_id,
-    kunjungan_tanggal,
+    kunjungan_tanggal as kunjungan_tanggal,
+    extract(year from kunjungan_tanggal)::int as year,
+    extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
 
     -- geography: labels only; 'lainnya' falls back to the free-text field
     ref_prov.label as provinsi,
