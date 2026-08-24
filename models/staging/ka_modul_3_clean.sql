@@ -78,7 +78,7 @@ parsed as (
 filtered_dates as (
     select *
     from parsed p
-    where date >= date '2026-04-01'
+    where date >= date '2026-07-01'
 ),
 
 -- Apply approved district-name corrections.

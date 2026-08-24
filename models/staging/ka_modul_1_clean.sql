@@ -79,7 +79,7 @@ parsed as (
 filtered_quarters as (
     select *
     from parsed
-    where date >= date '2026-04-01'
+    where date >= date '2026-07-01'
 ),
 
 -- Apply approved district-name corrections.
@@ -88,13 +88,9 @@ district_corrected as (
         p.*,
         coalesce(dl.district, p.district_raw) as district,
         case
-            when lower(coalesce(p.role_raw, '')) = 'nakes' then 'Health Worker'
-            when lower(coalesce(p.role_raw, '')) ~ 'bidan' then 'Health Worker'
+            when lower(coalesce(p.role_raw, '')) = 'tenaga kesehatan' then 'Health Worker'
             when lower(coalesce(p.role_raw, '')) = 'kader posyandu' then 'Community Health Worker'
-            when lower(coalesce(p.role_raw, '')) ~ 'tim pendamping keluarga' then 'Community Health Worker'
-            when lower(coalesce(p.role_raw, '')) ~ 'mahasiswa' then 'Student'
-            when lower(coalesce(p.role_raw, '')) ~ 'mahasiswi' then 'Student'
-            when lower(coalesce(p.role_raw, '')) ~ 'novo' then 'Student'
+            when lower(coalesce(p.role_raw, '')) = 'mahasiswa' then 'Student'
             else 'Public'
         end as role
     from filtered_quarters p

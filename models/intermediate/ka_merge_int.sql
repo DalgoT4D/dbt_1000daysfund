@@ -272,7 +272,7 @@ past_quarter_raw as (
         nullif(trim("program"), '') as program,
         nullif(trim("is_latest"), '')::boolean as is_latest
     from {{ source('raw_sheets', 'ka_past_quarter') }}
-    where nullif(trim("date"), '')::date < date '2026-04-01'
+    where nullif(trim("date"), '')::date < date '2026-07-01'
 ),
 
 -- Look up each raw district value; use the corrected district when there's
