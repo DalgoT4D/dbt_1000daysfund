@@ -129,7 +129,7 @@ normalized_names as (
                 ' ',
                 'g'
             )
-        ) as name_plain
+        ) as name_plain -- more cleaning than just the macro used for unicode clean up
     from distinct_names
 ),
 
@@ -188,8 +188,7 @@ name_groups_final as (
     group by clean_name
 
     union all
-
-    select dn.clean_name, dn.clean_name
+    select distinct dn.clean_name, dn.clean_name
     from distinct_names dn
     where not exists (
         select 1
