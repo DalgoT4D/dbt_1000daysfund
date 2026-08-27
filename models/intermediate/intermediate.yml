@@ -12,7 +12,6 @@ models:
     columns:
       - name: parent_id
       - name: parent_name
-      - name: submission_id
 
   - name: ka_merge_int
     description: All historical and current KA submissions, with current names unified and every row carrying an is_latest flag.
