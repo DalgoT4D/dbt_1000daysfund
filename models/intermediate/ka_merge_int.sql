@@ -263,10 +263,7 @@ past_quarter_raw as (
         nullif(trim("quarter"), '') as quarter,
         nullif(trim("date"), '')::date as date,
         round(nullif(trim("score"), '')::numeric)::integer as score,
-        case
-            when nullif(trim("score"), '')::numeric >= 80 then 'TRUE'
-            when nullif(trim("score"), '') is not null then 'FALSE'
-        end as is_certified,
+        nullif(trim("is_certified"), '') as is_certified,
         nullif(trim("modul"), '') as modul,
         nullif(trim("program"), '') as program,
         nullif(trim("is_latest"), '')::boolean as is_latest
