@@ -3,7 +3,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["score_monitoring_posyandu", "staging", "monitoring_posyandu"]
+    tags=["monitoring_posyandu_score_stg", "staging", "monitoring_posyandu"]
 ) }}
 
 -- Select scored records from the active monitoring form.
