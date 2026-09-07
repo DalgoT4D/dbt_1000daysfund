@@ -59,6 +59,7 @@ typed as (
         nullif(btrim(catatan), '')                              as catatan,
 
         -- provenance from the ingestion layer
+        nullif(btrim(is_verified), '')                          as is_verified,
         nullif(btrim(source_tab), '')                           as source_tab,
         case when btrim(coalesce(source_row, '')) ~ '^\d+$'
              then btrim(source_row)::int end                    as source_row,
@@ -182,6 +183,7 @@ final as (
         null::boolean as ibu_ttd_check,   -- needs ibu_ttd_mulai / ibu_ttd_jumlah_raw
 
         -- provenance
+        is_verified,
         source_tab,
         source_row,
         loaded_at,
