@@ -35,7 +35,28 @@ with flagged as (
 
 )
 
-select *
+select
+    *,
+
+    array_to_string(
+        array_remove(
+            array[
+                case when fail_year_not_null then 'Tahun null' end,
+                case when fail_year_min2026 then 'Tahun <2026' end,
+                case when fail_usia_bulan_not_null then 'Usia null' end,
+                case when fail_usia_bulan_range then 'Usia not in range' end,
+                case when fail_tinggi_badan_range then 'Tinggi badan not in range' end,
+                case when fail_berat_badan_range then 'Berat badan not in range' end,
+                case when fail_protein_biner_required then 'Protein biner required' end,
+                case when fail_protein_biner_false_check then 'Protein biner mismatch' end,
+                case when fail_waz_range then 'WAZ not in range' end,
+                case when fail_haz_range then 'HAZ not in range' end
+            ],
+            null
+        ),
+        ', '
+    ) as fail_reasons
+
 from flagged
 where fail_year_not_null
    or fail_year_min2026
