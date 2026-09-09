@@ -16,7 +16,7 @@ with flagged as (
         (ibu_lila is null is not null
             and ibu_lila not between 20 and 30)                as fail_lila_range  
     from {{ ref('register_posyandu_pemerintah_bumil_stg') }}
-
+    where is_verified is distinct from true
 )
 
 select

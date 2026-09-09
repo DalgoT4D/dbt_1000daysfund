@@ -32,7 +32,10 @@ with typed as (
         nullif(btrim(catatan), '') as catatan, -- notes
 
         -- provenance from the ingestion layer
-        nullif(btrim(is_verified), '') as is_verified,
+        case
+            when upper(btrim(coalesce(is_verified, ''))) in ('TRUE',  'YA',    '1', 'Y') then true
+            when upper(btrim(coalesce(is_verified, ''))) in ('FALSE', 'TIDAK', '0', 'N') then false
+        end as is_verified,
         nullif(btrim(source_tab), '') as source_tab,
         case when btrim(coalesce(source_row, '')) ~ '^\d+$' then btrim(source_row)::int end as source_row,
         nullif(btrim(loaded_at), '')::timestamp as loaded_at
@@ -191,6 +194,7 @@ select
     null::boolean as baduta_wf_check,      -- if a child hasnt been weighed in 3 months
 
     -- provenance
+    is_verified,
     source_tab,
     source_row,
     loaded_at,

@@ -15,7 +15,7 @@ with flagged as (
             and baduta_haz not between -3.0 and 3.0)                   as fail_haz
                 
     from {{ ref('register_posyandu_pemerintah_baduta_stg') }}
-
+    where is_verified is distinct from true
 )
 
 select
