@@ -26,7 +26,7 @@ with active as (
         langkah_5_perc                   as langkah_5_perc,
         evaluasi_perc                    as evaluasi_perc,
         overall_perc                     as overall_perc
-    from {{ ref('active_monitoring_posyandu') }}
+    from {{ ref('active_monitoring_posyandu_stg') }}
 
 ),
 

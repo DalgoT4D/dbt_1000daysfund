@@ -2,7 +2,7 @@ version: 3
 
 
 models:
-  - name: asesmen_kunjungan_rumah_kasus
+  - name: active_kunjungan_rumah_kasus_stg
     description: Flattened Kobo home-visit case assessments enriched with location reference labels.
     columns:
       - name: submission_id
@@ -81,7 +81,7 @@ models:
       - name: score_raw
         description: Original `Skor` value retained for auditing; not used to calculate `score`.
 
-  - name: register_posyandu_baduta_stg
+  - name: register_posyandu_tdf_baduta_stg
     description: Staging model for under-five Posyandu registration data.
     columns:
       - name: year
@@ -133,7 +133,7 @@ models:
               min_value: -6.0
               max_value: 6.0
 
-  - name: register_posyandu_bumil_stg
+  - name: register_posyandu_tdf_bumil_stg
     description: Staging model for pregnant-mother Posyandu registration data.
     columns:
       - name: year
@@ -205,7 +205,7 @@ models:
         description: >
           Broad role bucket derived from the raw `Peran` response.
 
-  - name: asesmen_monitoring_posyandu
+  - name: active_monitoring_posyandu_stg
     description: Flattened staging model for the Monitoring Posyandu Kobo submission data from `raw_kobo.ACTIVEMonitoring_Posyandu`.
     columns:
       - name: submission_id

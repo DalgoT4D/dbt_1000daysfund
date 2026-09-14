@@ -7,9 +7,9 @@ with recursive names as (
         {{ profile_name_key('parent_name') }} as name_key
     from (
         select coalesce(ibu_nama, baduta_pengasuh_nama) as parent_name
-        from {{ ref('register_posyandu_combined_stg') }}
+        from {{ ref('register_posyandu_combined') }}
         union all
-        select pengasuh_nama from {{ ref('active_kunjungan_rumah_kasus') }}
+        select pengasuh_nama from {{ ref('active_kunjungan_rumah_kasus_stg') }}
     ) source_names
     where nullif(trim(parent_name), '') is not null
 ),

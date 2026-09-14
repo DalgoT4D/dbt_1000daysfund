@@ -216,7 +216,7 @@ epus_bumil as (
         cast(null as boolean ) as baduta_asi_check,
         cast(null as boolean ) as baduta_protein_check,
         cast(null as boolean ) as baduta_wf_check
-    from {{ ref('epus_bumil_stg') }}
+    from {{ ref('register_posyandu_epus_bumil_stg') }}
 
 ),
 
@@ -283,7 +283,7 @@ epus_baduta as (
         baduta_asi_check                         as baduta_asi_check,
         baduta_protein_check                     as baduta_protein_check,
         cast(null as boolean ) as baduta_wf_check
-    from {{ ref('epus_baduta_stg') }}
+    from {{ ref('register_posyandu_epus_baduta_stg') }}
 
 ),
 

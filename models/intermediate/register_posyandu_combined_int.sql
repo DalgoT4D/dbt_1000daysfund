@@ -10,6 +10,6 @@ select
     )) as parent_id,
     initcap(m.unified_name) as parent_name,
     r.*
-from {{ ref('register_posyandu_combined_stg') }} r
+from {{ ref('register_posyandu_combined') }} r
 join {{ ref('parent_name_fct') }} m
     on m.name_variant = coalesce(r.ibu_nama, r.baduta_pengasuh_nama)
