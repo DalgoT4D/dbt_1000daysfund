@@ -15,7 +15,7 @@
 -- Load processed EPUS baduta records.
 with source as (
 
-    select * from {{ source('raw_sheets', 'epus_baduta') }}
+    select * from {{ source('raw_sheets', 'register_posyandu_epus_baduta') }}
 
 ),
 

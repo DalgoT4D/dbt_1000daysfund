@@ -15,7 +15,7 @@
 -- Load processed EPUS bumil records.
 with source as (
 
-    select * from {{ source('raw_sheets', 'epus_bumil') }}
+    select * from {{ source('raw_sheets', 'register_posyandu_epus_bumil') }}
 
 ),
 
