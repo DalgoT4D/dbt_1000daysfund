@@ -7,7 +7,7 @@
 --     so before we can dedupe or count participation we first need to figure
 --     out which submitted names actually belong to the same person.
 --   - ka_past_quarter (historical, before Q2 2026): already one row per
---     person, but its district values were never run through district
+--     person, but its kota_kabupaten values were never run through district
 --     correction, unlike the current modules.
 --
 -- The steps below, in order:
@@ -16,16 +16,16 @@
 --      name_groups_final -> with_unified
 --                                  - identity resolution: decide which
 --                                    submitted names are the same person
---                                    (matched by shared district/email/
+--                                    (matched by shared kota_kabupaten/email/
 --                                    whatsapp plus a close name match), and
 --                                    pick one representative name per person
---                                    (`unified_name`).
+--                                    (`unified_nama`).
 --   3. ranked                      - drop duplicate submissions, keeping the
 --                                    most recent one per person per module
 --                                    per quarter.
 --   4. district_lookup -> past_quarter_raw -> past_quarter
 --                                  - load the historical records and correct
---                                    their district values using the same
+--                                    their kota_kabupaten values using the same
 --                                    lookup table modules 1-3 already use.
 --   5. current_modules             - finalize the current-module records
 --                                    (score rounding, is_certified/is_latest
@@ -43,15 +43,15 @@
 with recursive current_modules_raw as (
     select
         email,
-        name,
-        clean_name,
+        nama,
+        clean_nama,
         role,
         whatsapp,
-        district_original,
-        district,
-        province,
+        kota_kabupaten_original,
+        kota_kabupaten,
+        provinsi,
         puskesmas,
-        village,
+        desa_kelurahan,
         cast(year as integer) as year,
         quarter,
         date,
@@ -64,15 +64,15 @@ with recursive current_modules_raw as (
 
     select
         email,
-        name,
-        clean_name,
+        nama,
+        clean_nama,
         role,
         whatsapp,
-        district_original,
-        district,
-        province,
+        kota_kabupaten_original,
+        kota_kabupaten,
+        provinsi,
         puskesmas,
-        village,
+        desa_kelurahan,
         cast(year as integer) as year,
         quarter,
         date,
@@ -85,15 +85,15 @@ with recursive current_modules_raw as (
 
     select
         email,
-        name,
-        clean_name,
+        nama,
+        clean_nama,
         role,
         whatsapp,
-        district_original,
-        district,
-        province,
+        kota_kabupaten_original,
+        kota_kabupaten,
+        provinsi,
         puskesmas,
-        village,
+        desa_kelurahan,
         cast(year as integer) as year,
         quarter,
         date,
@@ -103,13 +103,13 @@ with recursive current_modules_raw as (
     from {{ ref('ka_modul_3_clean') }}
 ),
 
--- Step 2 (identity resolution): every distinct name+district+contact
+-- Step 2 (identity resolution): every distinct nama+kota_kabupaten+contact
 -- combination seen in the current modules - the raw material for figuring
 -- out which of these are actually the same person.
 distinct_names as (
-    select distinct clean_name, name, district, email, whatsapp
+    select distinct clean_nama, nama, kota_kabupaten, email, whatsapp
     from current_modules_raw
-    where clean_name is not null
+    where clean_nama is not null
 ),
 
 -- Strip down to a plain lowercase-letters-only version of each name, so two
@@ -117,14 +117,14 @@ distinct_names as (
 -- be compared for similarity.
 normalized_names as (
     select
-        clean_name,
-        name,
-        district,
+        clean_nama,
+        nama,
+        kota_kabupaten,
         email,
         whatsapp,
         trim(
             regexp_replace(
-                regexp_replace(clean_name, '[^a-z ]', '', 'g'),
+                regexp_replace(clean_nama, '[^a-z ]', '', 'g'),
                 '\s+',
                 ' ',
                 'g'
@@ -134,21 +134,21 @@ normalized_names as (
 ),
 
 -- Pair up two names as "likely the same person" only when they share hard
--- identity evidence (same district, or same email, or same whatsapp number)
+-- identity evidence (same kota_kabupaten, or same email, or same whatsapp number)
 -- AND the names themselves are a close match - either textually similar, or
 -- one is the other with something appended (e.g. "Adea" vs "Adea O").
 -- Matching name alone, or identity evidence alone, isn't enough on its own.
 name_pairs as (
     select
-        a.clean_name,
-        least(a.clean_name, b.clean_name) as root
+        a.clean_nama,
+        least(a.clean_nama, b.clean_nama) as root
     from normalized_names a
     join normalized_names b
-        on a.clean_name <> b.clean_name
+        on a.clean_nama <> b.clean_nama
         and a.name_plain <> ''
         and b.name_plain <> ''
         and (
-            a.district = b.district
+            a.kota_kabupaten = b.kota_kabupaten
             or a.email = b.email
             or a.whatsapp = b.whatsapp
         )
@@ -164,12 +164,12 @@ name_pairs as (
 -- transitively (A-C). This recursive CTE walks those chains to find, for
 -- every linked name, the single earliest/alphabetically-first name in its
 -- whole chain - that becomes the shared group key for everyone in the chain.
-name_groups (clean_name, root) as (
-    select clean_name, root from name_pairs
+name_groups (clean_nama, root) as (
+    select clean_nama, root from name_pairs
     union
-    select np.clean_name, ng.root
+    select np.clean_nama, ng.root
     from name_pairs np
-    join name_groups ng on np.root = ng.clean_name
+    join name_groups ng on np.root = ng.clean_nama
 ),
 
 -- Two passes of chain-following can still leave a name pointing at a root
@@ -177,46 +177,46 @@ name_groups (clean_name, root) as (
 -- to one final group key per name. Names with no match at all become their
 -- own group of one.
 name_groups_final as (
-    select clean_name, min(root) as name_group_key
+    select clean_nama, min(root) as name_group_key
     from (
-        select clean_name, root from name_groups
+        select clean_nama, root from name_groups
         union all
-        select ng.clean_name, ng2.root
+        select ng.clean_nama, ng2.root
         from name_groups ng
-        join name_groups ng2 on ng.root = ng2.clean_name
+        join name_groups ng2 on ng.root = ng2.clean_nama
     ) chained
-    group by clean_name
+    group by clean_nama
 
     union all
-    select distinct dn.clean_name, dn.clean_name
+    select distinct dn.clean_nama, dn.clean_nama
     from distinct_names dn
     where not exists (
         select 1
         from name_groups ng
-        where ng.clean_name = dn.clean_name
+        where ng.clean_nama = dn.clean_nama
     )
 ),
 
 -- Pick one representative name per identity group (the longest name in the
 -- group, i.e. most complete/least likely to be a shortened nickname, earliest
 -- submitted as the tiebreaker) and stamp it onto every row in that group as
--- `unified_name`.
+-- `unified_nama`.
 with_unified as (
     select
         cm.*,
-        first_value(cm.name) over (
+        first_value(cm.nama) over (
             partition by coalesce(
                 ngf.name_group_key,
-                cm.clean_name,
-                lower(trim(cm.name)),
+                cm.clean_nama,
+                lower(trim(cm.nama)),
                 cm.email,
                 cm.whatsapp
             )
-            order by length(coalesce(cm.clean_name, '')) desc, cm.timestamp_raw asc
+            order by length(coalesce(cm.clean_nama, '')) desc, cm.timestamp_raw asc
             rows between unbounded preceding and unbounded following
-        ) as unified_name
+        ) as unified_nama
     from current_modules_raw cm
-    left join name_groups_final ngf on cm.clean_name = ngf.clean_name
+    left join name_groups_final ngf on cm.clean_nama = ngf.clean_nama
 ),
 
 -- Step 3: the same person can submit the same module more than once in a
@@ -231,34 +231,35 @@ ranked as (
                 modul,
                 quarter,
                 coalesce(email, whatsapp),
-                district,
-                coalesce(unified_name, name, clean_name)
+                kota_kabupaten,
+                coalesce(unified_nama, nama, clean_nama)
             order by timestamp_raw desc
         ) as rn
     from with_unified
 ),
 
--- Step 4: same typo -> district correction table the current modules already
+-- Step 4: same typo -> kota_kabupaten correction table the current modules already
 -- use in staging (ka_modul_1/2/3_clean) - needed here because ka_past_quarter
 -- is read directly from source and has never been through it.
 district_lookup as (
-    select typo_key, district
+    select typo_key, kota_kabupaten
     from {{ ref('ka_district_lookup_int') }}
 ),
 
--- Parse and type-cast the historical sheet. district here is still the raw,
--- uncorrected value (see district_raw) - correction happens in the next CTE.
+-- Parse and type-cast the historical sheet. kota_kabupaten here is still the
+-- raw, uncorrected value (see kota_kabupaten_raw) - correction happens in the
+-- next CTE.
 past_quarter_raw as (
     select
         nullif(trim("email"), '') as email,
-        nullif(trim("name"), '') as name,
-        null::varchar as unified_name,
+        nullif(trim("name"), '') as nama,
+        null::varchar as unified_nama,
         nullif(trim("role"), '') as role,
         nullif(trim("whatsapp"), '') as whatsapp,
-        nullif(trim("district"), '') as district_raw,
-        null::varchar as province,
+        nullif(trim("district"), '') as kota_kabupaten_raw,
+        nullif(trim("province"), '') as provinsi,
         nullif(trim("puskesmas"), '') as puskesmas,
-        nullif(trim("village"), '') as village,
+        nullif(trim("village"), '') as desa_kelurahan,
         nullif(trim("year"), '')::integer as year,
         nullif(trim("quarter"), '') as quarter,
         nullif(trim("date"), '')::date as date,
@@ -271,19 +272,19 @@ past_quarter_raw as (
     where nullif(trim("date"), '')::date < date '2026-07-01'
 ),
 
--- Look up each raw district value; use the corrected district when there's
+-- Look up each raw kota_kabupaten value; use the corrected value when there's
 -- an approved/suggested match, otherwise keep the raw value as typed.
 past_quarter as (
     select
         pq.email,
-        pq.name,
-        pq.unified_name,
+        pq.nama,
+        pq.unified_nama,
         pq.role,
         pq.whatsapp,
-        coalesce(dl.district, pq.district_raw) as district,
-        pq.province,
+        coalesce(dl.kota_kabupaten, pq.kota_kabupaten_raw) as kota_kabupaten,
+        pq.provinsi,
         pq.puskesmas,
-        pq.village,
+        pq.desa_kelurahan,
         pq.year,
         pq.quarter,
         pq.date,
@@ -293,7 +294,7 @@ past_quarter as (
         pq.program,
         pq.is_latest
     from past_quarter_raw pq
-    left join district_lookup dl on lower(trim(pq.district_raw)) = dl.typo_key
+    left join district_lookup dl on lower(trim(pq.kota_kabupaten_raw)) = dl.typo_key
 ),
 
 -- Step 5: finish the current-module records so their columns line up
@@ -303,14 +304,14 @@ past_quarter as (
 current_modules as (
     select
         email,
-        name,
-        unified_name,
+        nama,
+        unified_nama,
         role,
         whatsapp,
-        district,
-        province,
+        kota_kabupaten,
+        provinsi,
         puskesmas,
-        village,
+        desa_kelurahan,
         year,
         quarter,
         date,

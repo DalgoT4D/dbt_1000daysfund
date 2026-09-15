@@ -73,7 +73,7 @@ models:
         description: >
           Original district text captured from the source sheet before
           standardization.
-      - name: district
+      - name: kota_kabupaten
         description: >
           Standardized district name selected from the reference typo table or
           matched from `reference_district_clean`.

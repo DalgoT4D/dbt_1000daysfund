@@ -19,7 +19,7 @@ models:
         description: Quarter label associated with the record.
       - name: date
         description: Submission or assessment date for the record.
-      - name: name
+      - name: nama
         description: Raw submitted participant name for the record.
       - name: email
         description: Normalized email address captured for the participant.
@@ -31,11 +31,11 @@ models:
         description: Program field carried from `ka_merge_int`. It is currently null for Q2 2026+ KA module rows.
       - name: role
         description: Participant role for the given record.
-      - name: village
+      - name: desa_kelurahan
         description: Village associated with the record.
       - name: is_certified
         description: Certification flag derived from score thresholds used elsewhere in the KA production models.
-      - name: district
+      - name: kota_kabupaten
         description: Standardized district associated with the record.
       - name: modul
         description: KA module identifier for the record.
@@ -49,5 +49,5 @@ models:
         description: Rounded score percentage for the record.
       - name: person_id
         description: Stable person identifier from `profile_fct`, using an email-based cluster suffix such as `_c0`.
-      - name: canonical_name
+      - name: canonical_nama
         description: Canonical participant name, using the unified name from the Q2 2026+ matching logic.

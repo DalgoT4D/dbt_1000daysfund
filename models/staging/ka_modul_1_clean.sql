@@ -41,7 +41,7 @@ with source as (
 district_lookup as (
     select
         typo_key,
-        district
+        kota_kabupaten
     from {{ ref('ka_district_lookup_int') }}
 ),
 
@@ -56,15 +56,15 @@ parsed as (
             '-Q',
             cast(extract(quarter from cast("Timestamp" as timestamp)) as varchar)
         ) as quarter,
-        "Nama" as name,
-        {{ normalize_unicode('"Nama"') }} as clean_name,
+        "Nama" as nama,
+        {{ normalize_unicode('"Nama"') }} as clean_nama,
         lower(trim("Email_Address")) as email,
         trim("Peran_Anda") as role_raw,
         "Nomor_HP_WA" as whatsapp,
-        {{ normalize_unicode('"Kabupaten_Kota"') }} as district_raw,
-        trim("Provinsi") as province,
+        {{ normalize_unicode('"Kabupaten_Kota"') }} as kota_kabupaten_raw,
+        trim("Provinsi") as provinsi,
         trim("Puskesmas") as puskesmas,
-        trim("Desa_Kelurahan") as village,
+        trim("Desa_Kelurahan") as desa_kelurahan,
         round(
             (
                 cast(trim(split_part("Score", '/', 1)) as numeric)
@@ -86,7 +86,7 @@ filtered_quarters as (
 district_corrected as (
     select
         p.*,
-        coalesce(dl.district, p.district_raw) as district,
+        coalesce(dl.kota_kabupaten, p.kota_kabupaten_raw) as kota_kabupaten,
         case
             when lower(coalesce(p.role_raw, '')) = 'tenaga kesehatan' then 'Health Worker'
             when lower(coalesce(p.role_raw, '')) = 'kader posyandu' then 'Community Health Worker'
@@ -95,20 +95,20 @@ district_corrected as (
         end as role
     from filtered_quarters p
     left join district_lookup dl
-        on p.district_raw = dl.typo_key
+        on p.kota_kabupaten_raw = dl.typo_key
 )
 
 select
     email,
-    name,
-    clean_name,
+    nama,
+    clean_nama,
     role,
     whatsapp,
-    district_raw as district_original,
-    district,
-    province,
+    kota_kabupaten_raw as kota_kabupaten_original,
+    kota_kabupaten,
+    provinsi,
     puskesmas,
-    village,
+    desa_kelurahan,
     year,
     quarter,
     date,

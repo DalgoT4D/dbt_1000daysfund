@@ -25,19 +25,21 @@ with past_profiles as (
     where cast(nullif(trim("date"), '') as date) < date '2026-04-01'
 ),
 
--- Standardize current participant profiles.
+-- Standardize current participant profiles. ka_merge_int publishes these
+-- fields under Indonesian names (nama / kota_kabupaten / unified_nama); they
+-- are aliased back here so this model's own output columns are unchanged.
 current_profiles as (
     select
-        nullif(trim(name), '') as name,
+        nullif(trim(nama), '') as name,
         lower(nullif(trim(email), '')) as email,
         nullif(trim(whatsapp), '') as whatsapp,
         nullif(trim(role), '') as role,
-        nullif(trim(district), '') as district,
+        nullif(trim(kota_kabupaten), '') as district,
         date,
         date::timestamp as timestamp_raw,
-        nullif(trim(unified_name), '') as unified_name,
-        {{ profile_name_key('coalesce(unified_name, name)') }} as profile_name_key,
-        {{ profile_name_key('district') }} as district_key,
+        nullif(trim(unified_nama), '') as unified_name,
+        {{ profile_name_key('coalesce(unified_nama, nama)') }} as profile_name_key,
+        {{ profile_name_key('kota_kabupaten') }} as district_key,
         {{ profile_whatsapp_key('whatsapp') }} as whatsapp_key,
         'current' as profile_period
     from {{ ref('ka_merge_int') }}

@@ -4,7 +4,8 @@
 -- abbreviations, typos, and spelling variants instead of the official district
 -- name. This model is the single place that resolves a typed value to one
 -- canonical district name. Staging models (ka_modul_1/2/3_clean) join to this
--- table's `typo_key` to turn whatever was typed into a clean `district`.
+-- table's `typo_key` to turn whatever was typed into a clean
+-- `kota_kabupaten`.
 --
 -- How the mapping is built, step by step:
 --   1. existing_mappings   - corrections a human has already approved, read
@@ -233,7 +234,7 @@ from approved_matches
 update reference.district_typos as dt
 set district = suggestions.district
 from (
-    select typo_key, typo, district
+    select typo_key, typo, kota_kabupaten as district
     from intermediate.ka_district_lookup_int
     where mapping_source = 'suggested'
 ) as suggestions
@@ -248,7 +249,7 @@ where lower(trim(dt.typo)) = suggestions.typo_key
 insert into reference.district_typos (typo, district)
 select suggestions.typo, suggestions.district
 from (
-    select typo_key, typo, district
+    select typo_key, typo, kota_kabupaten as district
     from intermediate.ka_district_lookup_int
     where mapping_source = 'suggested'
 ) as suggestions
@@ -294,5 +295,8 @@ final_lookup as (
     )
 )
 
-select typo_key, typo, district, mapping_source, match_method, observation_count, similarity_score
+-- The corrected district is published as `kota_kabupaten`. Everything above
+-- still calls it `district`, because both of this model's inputs -
+-- reference_district_clean and reference.district_typos - keep that name.
+select typo_key, typo, district as kota_kabupaten, mapping_source, match_method, observation_count, similarity_score
 from final_lookup
