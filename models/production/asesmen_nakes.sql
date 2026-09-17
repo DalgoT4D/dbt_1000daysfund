@@ -7,4 +7,4 @@
 
 select
     *
-from {{ ref('active_asesmen_nakes_stg') }}
+from {{ ref('asesmen_nakes_active_stg') }}

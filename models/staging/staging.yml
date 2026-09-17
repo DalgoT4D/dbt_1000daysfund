@@ -205,7 +205,7 @@ models:
         description: >
           Broad role bucket derived from the raw `Peran` response.
 
-  - name: active_monitoring_posyandu_stg
+  - name: monitoring_posyandu_active_stg
     description: Flattened staging model for the Monitoring Posyandu Kobo submission data from `raw_kobo.ACTIVEMonitoring_Posyandu`.
     columns:
       - name: submission_id

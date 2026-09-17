@@ -7,4 +7,4 @@
 
 select
     *
-from {{ ref('active_fungsionalitas_kader_chw_aim_stg') }}
+from {{ ref('chw_aim_active_stg') }}
