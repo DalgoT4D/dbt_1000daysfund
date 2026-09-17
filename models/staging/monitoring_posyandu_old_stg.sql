@@ -1,4 +1,4 @@
--- Model: Combines active and historical Posyandu monitoring scores.
+-- Model: historical Posyandu monitoring scores.
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -6,35 +6,11 @@
     tags=["monitoring_posyandu_score_stg", "staging", "monitoring_posyandu"]
 ) }}
 
--- Select scored records from the active monitoring form.
-with active as (
-
-    select
-        'active'                         as source,
-        kunjungan_tanggal                as kunjungan_tanggal,
-        provinsi                         as provinsi,
-        kota_kabupaten                   as kota_kabupaten,
-        kecamatan                        as kecamatan,
-        desa_kelurahan                   as desa_kelurahan,
-        puskesmas                        as puskesmas,
-        posyandu                         as posyandu,
-        persiapan_perc                   as persiapan_perc,
-        langkah_1_perc                   as langkah_1_perc,
-        langkah_2_perc                   as langkah_2_perc,
-        langkah_3_perc                   as langkah_3_perc,
-        langkah_4_perc                   as langkah_4_perc,
-        langkah_5_perc                   as langkah_5_perc,
-        evaluasi_perc                    as evaluasi_perc,
-        overall_perc                     as overall_perc
-    from {{ ref('active_monitoring_posyandu_stg') }}
-
-),
-
--- Cast historical monitoring scores to the shared schema.
-old as (
-    select
+select
         nullif(btrim(source::text), '')                        as source,
         nullif(btrim(kunjungan_tanggal::text), '')::date       as kunjungan_tanggal,
+        extract(year from kunjungan_tanggal)::int as year,
+        extract(year from kunjungan_tanggal)::int || '-Q' || extract(quarter from kunjungan_tanggal)::int as quarter,
         nullif(btrim(provinsi::text), '')                      as provinsi,
         nullif(btrim(kota_kabupaten::text), '')                as kota_kabupaten,
         nullif(btrim(kecamatan_nama::text), '')                as kecamatan,
@@ -49,18 +25,4 @@ old as (
         nullif(btrim(langkah_5_perc::text), '')::numeric       as langkah_5_perc,
         nullif(btrim(evaluasi_perc::text), '')::numeric        as evaluasi_perc,
         nullif(btrim(overall_perc::text), '')::numeric         as overall_perc
-    from {{ source('raw_sheets', 'old_monitoring_posyandu') }}
-
-),
-
--- Stack historical and active monitoring records.
-unioned as (
-
-    select * from old
-    union all
-    select * from active
-
-)
-
-select *
-from unioned
+    from {{ source('raw_sheets', 'monitoring_posyandu_old') }}

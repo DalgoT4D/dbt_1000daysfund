@@ -69,8 +69,8 @@ sources:
         identifier: 'register_posyandu_pemerintah_baduta'
       - name: 'register_posyandu_pemerintah_bumil'
         identifier: 'register_posyandu_pemerintah_bumil'
-      - name: 'old_monitoring_posyandu'
-        identifier: 'old_monitoring_posyandu'
+      - name: 'monitoring_posyandu_old'
+        identifier: 'monitoring_posyandu_old'
 
   - name: reference
     schema: reference

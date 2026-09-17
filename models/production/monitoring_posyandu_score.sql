@@ -3,9 +3,50 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["monitoring_posyandu_score", "staging", "monitoring_posyandu"]
+    tags=["monitoring_posyandu_score_stg", "staging", "monitoring_posyandu"]
 ) }}
 
-select
-    *
-from {{ ref('monitoring_posyandu_score_stg') }}
+-- Select scored records from the active monitoring form.
+with active as (
+
+    select
+        'active'                         as source,
+        kunjungan_tanggal                as kunjungan_tanggal,
+        year                             as year,
+        quarter                          as quarter,
+        provinsi                         as provinsi,
+        kota_kabupaten                   as kota_kabupaten,
+        kecamatan                        as kecamatan,
+        desa_kelurahan                   as desa_kelurahan,
+        puskesmas                        as puskesmas,
+        posyandu                         as posyandu,
+        persiapan_perc                   as persiapan_perc,
+        langkah_1_perc                   as langkah_1_perc,
+        langkah_2_perc                   as langkah_2_perc,
+        langkah_3_perc                   as langkah_3_perc,
+        langkah_4_perc                   as langkah_4_perc,
+        langkah_5_perc                   as langkah_5_perc,
+        evaluasi_perc                    as evaluasi_perc,
+        overall_perc                     as overall_perc
+    from {{ ref('monitoring_posyandu_active_stg') }}
+
+),
+
+-- Cast historical monitoring scores to the shared schema.
+old as (
+    select *
+    from {{ ref('monitoring_posyandu_old_stg') }}
+
+),
+
+-- Stack historical and active monitoring records.
+unioned as (
+
+    select * from old
+    union all
+    select * from active
+
+)
+
+select *
+from unioned
