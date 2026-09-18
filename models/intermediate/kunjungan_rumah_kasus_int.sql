@@ -31,5 +31,5 @@ select
     r.rujukan_dapat_pmt,
     r.durasi_kunjungan
 
-from {{ ref('active_kunjungan_rumah_kasus_stg') }} r
+from {{ ref('kunjungan_rumah_kasus_active_stg') }} r
 join {{ ref('parent_name_fct') }} m on m.name_variant = r.pengasuh_nama

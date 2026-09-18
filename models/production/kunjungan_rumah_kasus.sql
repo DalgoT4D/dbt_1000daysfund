@@ -7,4 +7,4 @@
 
 select
     *
-from {{ ref('active_kunjungan_rumah_kasus_stg') }}
+from {{ ref('kunjungan_rumah_kasus_active_stg') }}

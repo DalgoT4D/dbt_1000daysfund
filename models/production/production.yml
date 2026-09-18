@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: asesmen_rumah_kasus_summary
+  - name: kunjungan_rumah_summary
     description: Parent-level home-visit follow-up summary.
     columns:
       - name: parent_id
