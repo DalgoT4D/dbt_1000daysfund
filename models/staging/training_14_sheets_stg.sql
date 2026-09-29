@@ -1,5 +1,8 @@
 -- Model: Cleans and scores cohort 14 Sheets responses.
-{% set answer_key = ['D', 'B', 'D', 'D', 'B', 'C', 'B', 'D', 'D', 'B', 'B', 'B', 'C', 'A', 'C', 'D', 'A', 'B', 'C', 'B', 'D'] %}
+{% set answer_key = ['D', 'B', 'D', 'D', 'B', 'C', 'B', 'D', 'D', 'B', 'B', 'C', 'B', 'C', 'B', 'B', 'B', 'C', 'A', 'C', 'D', 'A', 'B', 'C', 'B', 'D'] %}
+{% set n_questions = answer_key | length %}
+-- Questions added mid-cohort; older respondents have these empty.
+{% set new_questions = [11, 12, 13, 14, 15] %}
 
 {{ config(
     materialized='table',
@@ -30,7 +33,7 @@ with source_rows as (
         cast("Posyandu_Binaan" as text) as "Posyandu_Binaan",
         cast("Pendidikan_Terakhir" as text) as "Pendidikan_Terakhir",
         cast({% if form_tag == 'post' %}"Tanggal_Pelatihan"{% else %}"Timestamp"{% endif %} as text) as timestamp_raw_text,
-        {% for question_number in range(1, 22) %}
+        {% for question_number in range(1, n_questions + 1) %}
         cast(
             {{ first_existing_column(relation, ['Q' ~ question_number, 'q' ~ question_number]) }}
             as text
@@ -61,7 +64,7 @@ cleaned as (
         nullif(trim(cast("Posyandu_Binaan" as text)), '') as posyandu_raw,
         nullif(trim(cast("Pendidikan_Terakhir" as text)), '') as education_raw,
         {{ validate_date('timestamp_raw_text') }} as training_date,
-        {% for question_number in range(1, 22) %}
+        {% for question_number in range(1, n_questions + 1) %}
         upper(nullif(trim(cast("Q{{ question_number }}" as text)), '')) as q{{ question_number }}{% if not loop.last %},{% endif %}
         {% endfor %}
     from source_rows
@@ -83,12 +86,19 @@ keyed as (
     from cleaned
 ),
 
--- Count correct and answered quiz items.
+-- Count correct and answered quiz items; set per-row denominator.
 scored as (
     select
         *,
         ({% for answer in answer_key %}case when q{{ loop.index }} = '{{ answer }}' then 1 else 0 end{% if not loop.last %} + {% endif %}{% endfor %}) as correct_answer_count,
-        ({% for answer in answer_key %}case when q{{ loop.index }} is not null then 1 else 0 end{% if not loop.last %} + {% endif %}{% endfor %}) as answered_question_count
+        ({% for answer in answer_key %}case when q{{ loop.index }} is not null then 1 else 0 end{% if not loop.last %} + {% endif %}{% endfor %}) as answered_question_count,
+        -- Old form version (all new questions empty) is scored out of 21, otherwise 26.
+        -- Alternative if you know the cutoff date: when training_date < 'YYYY-MM-DD' then ...
+        case
+            when {% for q in new_questions %}q{{ q }} is null{% if not loop.last %} and {% endif %}{% endfor %}
+                then {{ n_questions - new_questions | length }}
+            else {{ n_questions }}
+        end as total_questions
     from keyed
 ),
 
@@ -96,7 +106,7 @@ scored as (
 normalized as (
     select
         *,
-        round(correct_answer_count::numeric / {{ answer_key | length }} * 100, 2) as score,
+        round(correct_answer_count::numeric / total_questions * 100, 2) as score,
         case
             when phone_digits is null or length(phone_digits) < 8 then null
             when phone_digits like '62%' then '0' || substr(phone_digits, 3)
@@ -128,8 +138,8 @@ select
     nama_raw as unified_name,
     nama_key as unified_name_key,
     desa_raw, usia, peran_raw, score, correct_answer_count,
-    answered_question_count, score_raw,
-    {% for question_number in range(1, 22) %}q{{ question_number }},{% endfor %}
+    answered_question_count, total_questions, score_raw,
+    {% for question_number in range(1, n_questions + 1) %}q{{ question_number }},{% endfor %}
     provinsi_raw, kabupaten_raw, kecamatan_raw, puskesmas_raw, posyandu_raw,
     training_date,
     case when training_date is not null then extract(year from training_date)::integer end as year,

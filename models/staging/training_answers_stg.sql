@@ -2,7 +2,7 @@
 -- ============================================================================
 -- Training quiz item analysis  (pre vs post, forms + sheets combined)
 -- Answer key lives in reference.training_answer.
--- Training names are mapped inline in the training_meta CTE below — edit
+-- Training types are mapped inline in the training_meta CTE below — edit
 -- there when a new cohort is added.
 -- Post-survey feedback items (percaya_diri / kepuasan / sudah_baik) are
 -- intentionally omitted so they don't collide with quiz questions 1-3.
@@ -15,8 +15,8 @@
     tags=["training_answers_stg", "staging", "training"]
 ) }}
 
--- Map training numbers to display names.
-with training_meta (training, training_name) as (
+-- Map training codes to display types.
+with training_meta (training_code, training_type) as (
     values
         (12, 'Kelompok Kerja'),
         (13, 'Poster Pintar, GC, Manajemen Posyandu'),
@@ -26,7 +26,7 @@ with training_meta (training, training_name) as (
 -- Normalize the reference answer key.
 answer_key as (
     select
-        form_code, source_type, training, question_no, question_label,
+        form_code, source_type, training_code, question_no, question_label,
         nullif(btrim(lower(regexp_replace(correct_answer, '\s+', ' ', 'g'))), '') as correct_answer_norm
     from reference.training_answer
 ),
@@ -34,7 +34,7 @@ answer_key as (
 -- Unpivot and normalize quiz responses across cohorts.
 responses as (
     -- training_12_pre  (20 questions)
-    select '12' as form_code, 12 as training, 'pre' as stage,
+    select '12' as form_code, 12 as training_code, 'pre' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_12_pre,
     lateral (values
@@ -61,7 +61,7 @@ responses as (
     ) as v(question_no, answer_norm)
     union all
     -- training_12_post  (20 questions)
-    select '12' as form_code, 12 as training, 'post' as stage,
+    select '12' as form_code, 12 as training_code, 'post' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_12_post,
     lateral (values
@@ -88,7 +88,7 @@ responses as (
     ) as v(question_no, answer_norm)
     union all
     -- training_13_forms_pre  (19 questions)
-    select '13_forms' as form_code, 13 as training, 'pre' as stage,
+    select '13_forms' as form_code, 13 as training_code, 'pre' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_13_forms_pre,
     lateral (values
@@ -114,7 +114,7 @@ responses as (
     ) as v(question_no, answer_norm)
     union all
     -- training_13_forms_post  (19 questions)
-    select '13_forms' as form_code, 13 as training, 'post' as stage,
+    select '13_forms' as form_code, 13 as training_code, 'post' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_13_forms_post,
     lateral (values
@@ -140,7 +140,7 @@ responses as (
     ) as v(question_no, answer_norm)
     union all
     -- training_13_sheets_pre  (19 questions)
-    select '13_sheets' as form_code, 13 as training, 'pre' as stage,
+    select '13_sheets' as form_code, 13 as training_code, 'pre' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_13_sheets_pre,
     lateral (values
@@ -166,7 +166,7 @@ responses as (
     ) as v(question_no, answer_norm)
     union all
     -- training_13_sheets_post  (19 questions)
-    select '13_sheets' as form_code, 13 as training, 'post' as stage,
+    select '13_sheets' as form_code, 13 as training_code, 'post' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_13_sheets_post,
     lateral (values
@@ -192,7 +192,7 @@ responses as (
     ) as v(question_no, answer_norm)
     union all
     -- training_14_forms_pre  (21 questions)
-    select '14_forms' as form_code, 14 as training, 'pre' as stage,
+    select '14_forms' as form_code, 14 as training_code, 'pre' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_14_forms_pre,
     lateral (values
@@ -206,21 +206,26 @@ responses as (
         (8, nullif(btrim(lower(regexp_replace("8__Dibawah_ini_adalah_contoh_pemberian_makan_yang_responsif_pad"::text, '\s+', ' ', 'g'))), '')),
         (9, nullif(btrim(lower(regexp_replace("9__Ito_umur_10_bulan_menyukai_bubur_instan_dan_buah_buahan_kare"::text, '\s+', ' ', 'g'))), '')),
         (10, nullif(btrim(lower(regexp_replace("10__Ibu_Kristin_saat_datang_ke_posyandu_mengatakan_sudah_memula"::text, '\s+', ' ', 'g'))), '')),
-        (11, nullif(btrim(lower(regexp_replace("11__Bahaya_ibu_hamil_yang_mengalami_tekanan_darah_tinggi_adalah"::text, '\s+', ' ', 'g'))), '')),
-        (12, nullif(btrim(lower(regexp_replace("12__Jika_sasaran_ibu_hamil_memiliki_tekanan_darah_atas__sistole"::text, '\s+', ' ', 'g'))), '')),
-        (13, nullif(btrim(lower(regexp_replace("13__Ibu_hamil_dikatakan_beresiko_darah_tinggi_jika"::text, '\s+', ' ', 'g'))), '')),
-        (14, nullif(btrim(lower(regexp_replace("14__Manfaat_Tablet_Tambah_Darah__TTD__adalah__"::text, '\s+', ' ', 'g'))), '')),
-        (15, nullif(btrim(lower(regexp_replace("15__Apa_yang_berisiko_terjadi_bila_ibu_hamil_mengalami_KEK_"::text, '\s+', ' ', 'g'))), '')),
-        (16, nullif(btrim(lower(regexp_replace("16__Berikut_merupakan_informasi_atau_penyuluhan_yang_dapat_dibe"::text, '\s+', ' ', 'g'))), '')),
-        (17, nullif(btrim(lower(regexp_replace("17__Di_grafik_berat_badan_anak_yang_ada_di_dalam_buku_KIA__terd"::text, '\s+', ' ', 'g'))), '')),
-        (18, nullif(btrim(lower(regexp_replace("18__Berat_badan_Steve_bulan_lalu_4400_gr__angka_KBM_bulan_ini_a"::text, '\s+', ' ', 'g'))), '')),
-        (19, nullif(btrim(lower(regexp_replace("19__Jika_kenaikan_berat_badan_anak_tidak_sesuai_KBM_maka_penyul"::text, '\s+', ' ', 'g'))), '')),
-        (20, nullif(btrim(lower(regexp_replace("20__Jika_kenaikan_berat_badan_tidak_sesuai_KBM__penyuluhan_utam"::text, '\s+', ' ', 'g'))), '')),
-        (21, nullif(btrim(lower(regexp_replace("21__Yang_perlu_dilakukan_kader_untuk_memantau_baduta_berat_bada"::text, '\s+', ' ', 'g'))), ''))
+        (11, nullif(btrim(lower(regexp_replace("11__Seorang_ibu_merasa_cemas_karena_anaknya_belum_bisa_melakuka"::text, '\s+', ' ', 'g'))), '')),
+        (12, nullif(btrim(lower(regexp_replace("12__Pada_bayi_usia_3_5_bulan__manakah_yang_termasuk_tanda_lapar"::text, '\s+', ' ', 'g'))), '')),
+        (13, nullif(btrim(lower(regexp_replace("13__Seorang_ibu_bercerita_bahwa_bayinya_yang_berusia_4_bulan_se"::text, '\s+', ' ', 'g'))), '')),
+        (14, nullif(btrim(lower(regexp_replace("14__Bayi_usia_7_bulan_menutup_mulut__memalingkan_kepala__dan_me"::text, '\s+', ' ', 'g'))), '')),
+        (15, nullif(btrim(lower(regexp_replace("15__Kondisi_manakah_yang_menjadi_tanda_pengasuh_perlu_segera_me"::text, '\s+', ' ', 'g'))), '')),
+        (16, nullif(btrim(lower(regexp_replace("16__Bahaya_ibu_hamil_yang_mengalami_tekanan_darah_tinggi_adalah"::text, '\s+', ' ', 'g'))), '')),
+        (17, nullif(btrim(lower(regexp_replace("17__Jika_sasaran_ibu_hamil_memiliki_tekanan_darah_atas__sistole"::text, '\s+', ' ', 'g'))), '')),
+        (18, nullif(btrim(lower(regexp_replace("18__Ibu_hamil_dikatakan_beresiko_darah_tinggi_jika"::text, '\s+', ' ', 'g'))), '')),
+        (19, nullif(btrim(lower(regexp_replace("19__Manfaat_Tablet_Tambah_Darah__TTD__adalah__"::text, '\s+', ' ', 'g'))), '')),
+        (20, nullif(btrim(lower(regexp_replace("20__Apa_yang_berisiko_terjadi_bila_ibu_hamil_mengalami_KEK_"::text, '\s+', ' ', 'g'))), '')),
+        (21, nullif(btrim(lower(regexp_replace("21__Berikut_merupakan_informasi_atau_penyuluhan_yang_dapat_dibe"::text, '\s+', ' ', 'g'))), '')),
+        (22, nullif(btrim(lower(regexp_replace("22__Di_grafik_berat_badan_anak_yang_ada_di_dalam_buku_KIA__terd"::text, '\s+', ' ', 'g'))), '')),
+        (23, nullif(btrim(lower(regexp_replace("23__Berat_badan_Steve_bulan_lalu_4400_gr__angka_KBM_bulan_ini_a"::text, '\s+', ' ', 'g'))), '')),
+        (24, nullif(btrim(lower(regexp_replace("24__Jika_kenaikan_berat_badan_anak_tidak_sesuai_KBM_maka_penyul"::text, '\s+', ' ', 'g'))), '')),
+        (25, nullif(btrim(lower(regexp_replace("25__Jika_kenaikan_berat_badan_tidak_sesuai_KBM__penyuluhan_utam"::text, '\s+', ' ', 'g'))), '')),
+        (26, nullif(btrim(lower(regexp_replace("26__Yang_perlu_dilakukan_kader_untuk_memantau_baduta_berat_bada"::text, '\s+', ' ', 'g'))), ''))
     ) as v(question_no, answer_norm)
     union all
     -- training_14_forms_post  (21 questions)
-    select '14_forms' as form_code, 14 as training, 'post' as stage,
+    select '14_forms' as form_code, 14 as training_code, 'post' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_14_forms_post,
     lateral (values
@@ -234,21 +239,26 @@ responses as (
         (8, nullif(btrim(lower(regexp_replace("8__Dibawah_ini_adalah_contoh_pemberian_makan_yang_responsif_pad"::text, '\s+', ' ', 'g'))), '')),
         (9, nullif(btrim(lower(regexp_replace("9__Ito_umur_10_bulan_menyukai_bubur_instan_dan_buah_buahan_kare"::text, '\s+', ' ', 'g'))), '')),
         (10, nullif(btrim(lower(regexp_replace("10__Ibu_Kristin_saat_datang_ke_posyandu_mengatakan_sudah_memula"::text, '\s+', ' ', 'g'))), '')),
-        (11, nullif(btrim(lower(regexp_replace("11__Bahaya_ibu_hamil_yang_mengalami_tekanan_darah_tinggi_adalah"::text, '\s+', ' ', 'g'))), '')),
-        (12, nullif(btrim(lower(regexp_replace("12__Jika_sasaran_ibu_hamil_memiliki_tekanan_darah_atas__sistole"::text, '\s+', ' ', 'g'))), '')),
-        (13, nullif(btrim(lower(regexp_replace("13__Ibu_hamil_dikatakan_beresiko_darah_tinggi_jika"::text, '\s+', ' ', 'g'))), '')),
-        (14, nullif(btrim(lower(regexp_replace("14__Manfaat_Tablet_Tambah_Darah__TTD__adalah__"::text, '\s+', ' ', 'g'))), '')),
-        (15, nullif(btrim(lower(regexp_replace("15__Apa_yang_berisiko_terjadi_bila_ibu_hamil_mengalami_KEK_"::text, '\s+', ' ', 'g'))), '')),
-        (16, nullif(btrim(lower(regexp_replace("16__Berikut_merupakan_informasi_atau_penyuluhan_yang_dapat_dibe"::text, '\s+', ' ', 'g'))), '')),
-        (17, nullif(btrim(lower(regexp_replace("17__Di_grafik_berat_badan_anak_yang_ada_di_dalam_buku_KIA__terd"::text, '\s+', ' ', 'g'))), '')),
-        (18, nullif(btrim(lower(regexp_replace("18__Berat_badan_Steve_bulan_lalu_4400_gr__angka_KBM_bulan_ini_a"::text, '\s+', ' ', 'g'))), '')),
-        (19, nullif(btrim(lower(regexp_replace("19__Jika_kenaikan_berat_badan_anak_tidak_sesuai_KBM_maka_penyul"::text, '\s+', ' ', 'g'))), '')),
-        (20, nullif(btrim(lower(regexp_replace("20__Jika_kenaikan_berat_badan_tidak_sesuai_KBM__penyuluhan_utam"::text, '\s+', ' ', 'g'))), '')),
-        (21, nullif(btrim(lower(regexp_replace("21__Yang_perlu_dilakukan_kader_untuk_memantau_baduta_berat_bada"::text, '\s+', ' ', 'g'))), ''))
+        (11, nullif(btrim(lower(regexp_replace("11__Seorang_ibu_merasa_cemas_karena_anaknya_belum_bisa_melakuka"::text, '\s+', ' ', 'g'))), '')),
+        (12, nullif(btrim(lower(regexp_replace("12__Pada_bayi_usia_3_5_bulan__manakah_yang_termasuk_tanda_lapar"::text, '\s+', ' ', 'g'))), '')),
+        (13, nullif(btrim(lower(regexp_replace("13__Seorang_ibu_bercerita_bahwa_bayinya_yang_berusia_4_bulan_se"::text, '\s+', ' ', 'g'))), '')),
+        (14, nullif(btrim(lower(regexp_replace("14__Bayi_usia_7_bulan_menutup_mulut__memalingkan_kepala__dan_me"::text, '\s+', ' ', 'g'))), '')),
+        (15, nullif(btrim(lower(regexp_replace("15__Kondisi_manakah_yang_menjadi_tanda_pengasuh_perlu_segera_me"::text, '\s+', ' ', 'g'))), '')),
+        (16, nullif(btrim(lower(regexp_replace("16__Bahaya_ibu_hamil_yang_mengalami_tekanan_darah_tinggi_adalah"::text, '\s+', ' ', 'g'))), '')),
+        (17, nullif(btrim(lower(regexp_replace("17__Jika_sasaran_ibu_hamil_memiliki_tekanan_darah_atas__sistole"::text, '\s+', ' ', 'g'))), '')),
+        (18, nullif(btrim(lower(regexp_replace("18__Ibu_hamil_dikatakan_beresiko_darah_tinggi_jika"::text, '\s+', ' ', 'g'))), '')),
+        (19, nullif(btrim(lower(regexp_replace("19__Manfaat_Tablet_Tambah_Darah__TTD__adalah__"::text, '\s+', ' ', 'g'))), '')),
+        (20, nullif(btrim(lower(regexp_replace("20__Apa_yang_berisiko_terjadi_bila_ibu_hamil_mengalami_KEK_"::text, '\s+', ' ', 'g'))), '')),
+        (21, nullif(btrim(lower(regexp_replace("21__Berikut_merupakan_informasi_atau_penyuluhan_yang_dapat_dibe"::text, '\s+', ' ', 'g'))), '')),
+        (22, nullif(btrim(lower(regexp_replace("22__Di_grafik_berat_badan_anak_yang_ada_di_dalam_buku_KIA__terd"::text, '\s+', ' ', 'g'))), '')),
+        (23, nullif(btrim(lower(regexp_replace("23__Berat_badan_Steve_bulan_lalu_4400_gr__angka_KBM_bulan_ini_a"::text, '\s+', ' ', 'g'))), '')),
+        (24, nullif(btrim(lower(regexp_replace("24__Jika_kenaikan_berat_badan_anak_tidak_sesuai_KBM_maka_penyul"::text, '\s+', ' ', 'g'))), '')),
+        (25, nullif(btrim(lower(regexp_replace("25__Jika_kenaikan_berat_badan_tidak_sesuai_KBM__penyuluhan_utam"::text, '\s+', ' ', 'g'))), '')),
+        (26, nullif(btrim(lower(regexp_replace("26__Yang_perlu_dilakukan_kader_untuk_memantau_baduta_berat_bada"::text, '\s+', ' ', 'g'))), ''))
     ) as v(question_no, answer_norm)
     union all
     -- training_14_sheets_pre  (21 questions)
-    select '14_sheets' as form_code, 14 as training, 'pre' as stage,
+    select '14_sheets' as form_code, 14 as training_code, 'pre' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_14_sheets_pre,
     lateral (values
@@ -272,11 +282,16 @@ responses as (
         (18, nullif(btrim(lower(regexp_replace("Q18"::text, '\s+', ' ', 'g'))), '')),
         (19, nullif(btrim(lower(regexp_replace("Q19"::text, '\s+', ' ', 'g'))), '')),
         (20, nullif(btrim(lower(regexp_replace("Q20"::text, '\s+', ' ', 'g'))), '')),
-        (21, nullif(btrim(lower(regexp_replace("Q21"::text, '\s+', ' ', 'g'))), ''))
+        (21, nullif(btrim(lower(regexp_replace("Q21"::text, '\s+', ' ', 'g'))), '')),
+        (22, nullif(btrim(lower(regexp_replace("Q22"::text, '\s+', ' ', 'g'))), '')),
+        (23, nullif(btrim(lower(regexp_replace("Q23"::text, '\s+', ' ', 'g'))), '')),
+        (24, nullif(btrim(lower(regexp_replace("Q24"::text, '\s+', ' ', 'g'))), '')),
+        (25, nullif(btrim(lower(regexp_replace("Q25"::text, '\s+', ' ', 'g'))), '')),
+        (26, nullif(btrim(lower(regexp_replace("Q26"::text, '\s+', ' ', 'g'))), ''))
     ) as v(question_no, answer_norm)
     union all
     -- training_14_sheets_post  (21 questions)
-    select '14_sheets' as form_code, 14 as training, 'post' as stage,
+    select '14_sheets' as form_code, 14 as training_code, 'post' as stage,
            v.question_no, v.answer_norm
     from raw_sheets.training_14_sheets_post,
     lateral (values
@@ -307,7 +322,7 @@ responses as (
 -- Mark each response as answered and correct.
 scored as (
     select
-        r.training, r.stage, r.question_no,
+        r.training_code, r.stage, r.question_no,
         (r.answer_norm is not null)                                          as is_answered,
         (r.answer_norm is not null and r.answer_norm = k.correct_answer_norm) as is_correct
     from responses r
@@ -317,7 +332,7 @@ scored as (
 
 -- Select one display label per quiz item.
 labels as (
-    select training, question_no,
+    select training_code, question_no,
         coalesce(max(question_label) filter (where source_type = 'forms'),
                  max(question_label)) as question_label
     from answer_key
@@ -326,7 +341,7 @@ labels as (
 
 -- Aggregate pre-test and post-test accuracy counts.
 agg as (
-    select training, question_no,
+    select training_code, question_no,
         count(*) filter (where stage = 'pre'  and is_answered) as n_pre,
         count(*) filter (where stage = 'pre'  and is_correct)  as n_true_pre,
         count(*) filter (where stage = 'post' and is_answered) as n_post,
@@ -336,8 +351,8 @@ agg as (
 )
 
 select
-    l.training,
-    m.training_name,
+    l.training_code,
+    m.training_type,
     l.question_no,
     l.question_label,
     coalesce(a.n_pre, 0)                                    as n_pre,
@@ -349,6 +364,6 @@ select
     round(100.0 * a.n_true_post / nullif(a.n_post, 0)
         - 100.0 * a.n_true_pre  / nullif(a.n_pre,  0), 1)  as delta_pp
 from labels l
-left join training_meta m using (training)
-left join agg a using (training, question_no)
-order by l.training, l.question_no
+left join training_meta m using (training_code)
+left join agg a using (training_code, question_no)
+order by l.training_code, l.question_no
