@@ -140,6 +140,8 @@ select
     desa_raw, usia, peran_raw, score, correct_answer_count,
     answered_question_count, total_questions, score_raw,
     {% for question_number in range(1, n_questions + 1) %}q{{ question_number }},{% endfor %}
+    {% for answer in answer_key %}
+    {% if loop.index in new_questions %}case when total_questions = {{ n_questions }} then coalesce(q{{ loop.index }} = '{{ answer }}', false) end{% else %}coalesce(q{{ loop.index }} = '{{ answer }}', false){% endif %} as q{{ loop.index }}_correct,{% endfor %}
     provinsi_raw, kabupaten_raw, kecamatan_raw, puskesmas_raw, posyandu_raw,
     training_date,
     case when training_date is not null then extract(year from training_date)::integer end as year,

@@ -1,4 +1,26 @@
 -- Model: Cleans and standardizes cohort 12 pre/post form responses.
+{% set question_columns = [
+    '1__Apa_bahaya_utama_stunting_',
+    '2__Apa_yang_merupakan_AKIBAT_stunting_',
+    '3__Mana_pernyataan_yang_paling_tepat_terkait_ASI_eksklusif_',
+    '4__Apa_yang_dapat_dilakukan_setelah_hari_buka_posyandu_',
+    '5__Bagaimana_Langkah_pelayanan_hari_buka_posyandu_secara_beruru',
+    '6__Pada_langkah_penimbangan_dan_pengukuran_bagi_sasaran_bayi_ba',
+    '7__Makanan_tambahan_yang_disarankan_untuk_penyuluhan_di_Posyand',
+    '8__Ketika_melakukan_kunjungan_rumah__apa_saja_yang_harus_dilaku',
+    '9__Selama_berkunjung_ke_rumah__apa_langkah_yang_perlu_dilakukan',
+    '10__Manfaat_paling_utama_dalam_memantau_pertumbuhan_anak__yaitu',
+    '11__Bagian_tubuh_mana_yang_wajib_menempel_pada_stadiometer_untu',
+    '12__Alat_yang_digunakan_untuk_mengukur_panjang_badan_bayi_yang_',
+    '13__Jika_sasaran_ibu_hamil_memiliki_tekanan_darah_atas__sistole',
+    '14__Apa_yang_berisiko_terjadi_bila_ibu_hamil_mengalami_KEK_',
+    '15__Berapa_kali_ibu_melakukan_pemeriksaan_kehamilan_di_fasilita',
+    '16__Monitoring_yang_perlu_dilakukan_untuk_ibu_hamil_sasaran_hip',
+    '17__Perlambatan_berat_badan_perlu_dipantau_karena',
+    '18__Dalam_program_penanganan_kasus__perlambatan_pertumbuhan_dil',
+    '19__Jika_kenaikan_berat_badan_tidak_sesuai_KBM__penyuluhan_utam',
+    '20__Monitoring_yang_perlu_dilakukan_untuk_baduta_dengan_perlamb'
+] %}
 {% set pre_relation = source('raw_sheets', 'training_12_pre') %}
 {% set post_relation = source('raw_sheets', 'training_12_post') %}
 
@@ -37,7 +59,10 @@ with recursive
         cast({{ first_existing_column(relation, ['Jenis_Kelamin', 'Jenis Kelamin', 'Jenis kelamin']) }} as text) as jenis_kelamin_raw,
         cast({{ first_existing_column(relation, ['NIK']) }} as text) as nik_raw,
         cast({{ first_existing_column(relation, ['Pendidikan_Terakhir', 'Pendidikan Terakhir', 'Pendidikan terakhir']) }} as text) as education_raw,
-        cast({{ first_existing_column(relation, ['Posyandu', 'Nama Posyandu', 'Nama Posyandu Binaan', 'Asal Posyandu']) }} as text) as posyandu_raw
+        cast({{ first_existing_column(relation, ['Posyandu', 'Nama Posyandu', 'Nama Posyandu Binaan', 'Asal Posyandu']) }} as text) as posyandu_raw,
+        {% for col in question_columns %}
+        cast("{{ col }}" as text) as q{{ loop.index }}_raw{% if not loop.last %},{% endif %}
+        {% endfor %}
     from {{ relation }}
 ){% if not loop.last %},{% endif %}
 {% endfor %},
@@ -91,7 +116,11 @@ keyed as (
         {{ profile_name_key('education_raw') }} as education_key,
         {{ profile_name_key('peran_raw') }} as peran_key,
         {{ profile_whatsapp_key('phone_raw') }} as phone_digits,
-        {{ profile_whatsapp_key('nik_raw') }} as nik_digits
+        {{ profile_whatsapp_key('nik_raw') }} as nik_digits,
+        -- Normalize answers the same way reference.training_answer is normalized.
+        {% for col in question_columns %}
+        nullif(btrim(lower(regexp_replace(q{{ loop.index }}_raw, '\s+', ' ', 'g'))), '') as q{{ loop.index }}{% if not loop.last %},{% endif %}
+        {% endfor %}
     from all_rows
 ),
 
@@ -217,6 +246,17 @@ with_unified as (
         ) as unified_name
     from normalized n
     left join name_group_map ngm on n.nama_key = ngm.nama_key
+),
+
+-- Pivot the reference answer key to one column per question.
+answer_key as (
+    select
+        {% for col in question_columns %}
+        max(nullif(btrim(lower(regexp_replace(correct_answer, '\s+', ' ', 'g'))), ''))
+            filter (where question_no = {{ loop.index }}) as k{{ loop.index }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    from reference.training_answer
+    where form_code = '12'
 )
 
 -- Final select: expose raw + cleaned + key columns, derive year and quarter
@@ -254,5 +294,9 @@ select
     desa_key,
     kabupaten_key,
     kecamatan_key,
-    puskesmas_key
+    puskesmas_key,
+    {% for col in question_columns %}
+    case when k{{ loop.index }} is not null then coalesce(q{{ loop.index }} = k{{ loop.index }}, false) end as q{{ loop.index }}_correct{% if not loop.last %},{% endif %}
+    {% endfor %}
 from with_unified
+cross join answer_key

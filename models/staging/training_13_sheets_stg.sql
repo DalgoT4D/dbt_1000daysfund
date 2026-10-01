@@ -190,6 +190,8 @@ select
     score_raw,
     {% for question_number in range(1, 20) %}
     q{{ question_number }},{% endfor %}
+    {% for correct_answer in answer_key %}
+    coalesce(q{{ loop.index }} = '{{ correct_answer }}', false) as q{{ loop.index }}_correct,{% endfor %}
     provinsi_raw,
     kabupaten_raw,
     kecamatan_raw,

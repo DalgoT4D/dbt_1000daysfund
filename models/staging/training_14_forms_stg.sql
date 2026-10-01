@@ -1,4 +1,32 @@
 -- Model: Cleans and standardizes cohort 14 Forms responses.
+{% set question_columns = [
+    '1__Apa_saja_manfaat_ASI_bagi_bayi_',
+    '2__Bagaimana_prinsip_ASI_',
+    '3__Dalam_menggunakan_lembar_ASI_mengenai_tanda_kecukupan_ASI__t',
+    '4__Ketika_bayi_menyusu_pada_Ibu__pelekatan_yang_tepat_adalah_',
+    '5___ASI_yang_terbaik_adalah_yang_keluarnya_terakhir__karena_bis',
+    '6__Ketika_Ibu_sudah_bisa_memulai_masa_MPASI_untuk_anaknya__peny',
+    '7__Saat_anak_sudah_memasuki_usia_9_bulan__maka_pemberian_makan_',
+    '8__Dibawah_ini_adalah_contoh_pemberian_makan_yang_responsif_pad',
+    '9__Ito_umur_10_bulan_menyukai_bubur_instan_dan_buah_buahan_kare',
+    '10__Ibu_Kristin_saat_datang_ke_posyandu_mengatakan_sudah_memula',
+    '11__Seorang_ibu_merasa_cemas_karena_anaknya_belum_bisa_melakuka',
+    '12__Pada_bayi_usia_3_5_bulan__manakah_yang_termasuk_tanda_lapar',
+    '13__Seorang_ibu_bercerita_bahwa_bayinya_yang_berusia_4_bulan_se',
+    '14__Bayi_usia_7_bulan_menutup_mulut__memalingkan_kepala__dan_me',
+    '15__Kondisi_manakah_yang_menjadi_tanda_pengasuh_perlu_segera_me',
+    '16__Bahaya_ibu_hamil_yang_mengalami_tekanan_darah_tinggi_adalah',
+    '17__Jika_sasaran_ibu_hamil_memiliki_tekanan_darah_atas__sistole',
+    '18__Ibu_hamil_dikatakan_beresiko_darah_tinggi_jika',
+    '19__Manfaat_Tablet_Tambah_Darah__TTD__adalah__',
+    '20__Apa_yang_berisiko_terjadi_bila_ibu_hamil_mengalami_KEK_',
+    '21__Berikut_merupakan_informasi_atau_penyuluhan_yang_dapat_dibe',
+    '22__Di_grafik_berat_badan_anak_yang_ada_di_dalam_buku_KIA__terd',
+    '23__Berat_badan_Steve_bulan_lalu_4400_gr__angka_KBM_bulan_ini_a',
+    '24__Jika_kenaikan_berat_badan_anak_tidak_sesuai_KBM_maka_penyul',
+    '25__Jika_kenaikan_berat_badan_tidak_sesuai_KBM__penyuluhan_utam',
+    '26__Yang_perlu_dilakukan_kader_untuk_memantau_baduta_berat_bada'
+] %}
 {% set pre_relation = source('raw_sheets', 'training_14_forms_pre') %}
 {% set post_relation = source('raw_sheets', 'training_14_forms_post') %}
 
@@ -28,7 +56,10 @@ with source_rows as (
         cast({{ first_existing_column(relation, ['Nomor_HP_WA', 'Nomor HP/WA', 'Nomor HP/Whatsapp']) }} as text) as phone_raw,
         cast({{ first_existing_column(relation, ['Jenis_Kelamin', 'Jenis Kelamin', 'Jenis kelamin']) }} as text) as jenis_kelamin_raw,
         cast({{ first_existing_column(relation, ['Posyandu_Binaan', 'Posyandu', 'Nama Posyandu', 'Asal Posyandu']) }} as text) as posyandu_raw,
-        cast({{ first_existing_column(relation, ['Pendidikan_Terakhir', 'Pendidikan Terakhir', 'Pendidikan terakhir']) }} as text) as education_raw
+        cast({{ first_existing_column(relation, ['Pendidikan_Terakhir', 'Pendidikan Terakhir', 'Pendidikan terakhir']) }} as text) as education_raw,
+        {% for col in question_columns %}
+        cast("{{ col }}" as text) as q{{ loop.index }}_raw{% if not loop.last %},{% endif %}
+        {% endfor %}
     from {{ relation }}
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
@@ -61,7 +92,11 @@ keyed as (
         {{ profile_name_key('jenis_kelamin_raw') }} as jenis_kelamin_key,
         {{ profile_name_key('education_raw') }} as education_key,
         {{ profile_name_key('peran_raw') }} as peran_key,
-        {{ profile_whatsapp_key('phone_raw') }} as phone_digits
+        {{ profile_whatsapp_key('phone_raw') }} as phone_digits,
+        -- Normalize answers the same way reference.training_answer is normalized.
+        {% for col in question_columns %}
+        nullif(btrim(lower(regexp_replace(q{{ loop.index }}_raw, '\s+', ' ', 'g'))), '') as q{{ loop.index }}{% if not loop.last %},{% endif %}
+        {% endfor %}
     from source_rows
 ),
 
@@ -95,6 +130,17 @@ normalized as (
             else 'General'
         end as peran_category
     from keyed
+),
+
+-- Pivot the reference answer key to one column per question.
+answer_key as (
+    select
+        {% for col in question_columns %}
+        max(nullif(btrim(lower(regexp_replace(correct_answer, '\s+', ' ', 'g'))), ''))
+            filter (where question_no = {{ loop.index }}) as k{{ loop.index }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    from reference.training_answer
+    where form_code = '14_forms'
 )
 
 select
@@ -106,5 +152,9 @@ select
     case when timestamp_raw is not null then concat(extract(year from timestamp_raw)::integer, '-Q', extract(quarter from timestamp_raw)::integer) end as quarter,
     phone_raw, phone_key, jenis_kelamin_raw, jenis_kelamin,
     education_raw, education, peran_category, nama_key, desa_key,
-    kabupaten_key, kecamatan_key, puskesmas_key
+    kabupaten_key, kecamatan_key, puskesmas_key,
+    {% for col in question_columns %}
+    case when k{{ loop.index }} is not null then coalesce(q{{ loop.index }} = k{{ loop.index }}, false) end as q{{ loop.index }}_correct{% if not loop.last %},{% endif %}
+    {% endfor %}
 from normalized
+cross join answer_key

@@ -1,4 +1,5 @@
 -- Model: Combines cohort 14 Forms and Sheets responses into one schema.
+{% set n_questions = 26 %}
 {{ config(materialized='table', tags=['staging', 'training_14', 'training']) }}
 
 select
@@ -10,6 +11,7 @@ select
     jenis_kelamin, null::text as nik_raw, null::text as nik_key,
     education_raw, education, peran_category, nama_key, desa_key,
     kabupaten_key, kecamatan_key, puskesmas_key
+    {% for i in range(1, n_questions + 1) %}, q{{ i }}_correct{% endfor %}
 from {{ ref('training_14_forms_stg') }}
 
 union all
@@ -23,4 +25,5 @@ select
     jenis_kelamin_raw, jenis_kelamin, null::text, null::text,
     education_raw, education, peran_category, nama_key, desa_key,
     kabupaten_key, kecamatan_key, puskesmas_key
+    {% for i in range(1, n_questions + 1) %}, q{{ i }}_correct{% endfor %}
 from {{ ref('training_14_sheets_stg') }}

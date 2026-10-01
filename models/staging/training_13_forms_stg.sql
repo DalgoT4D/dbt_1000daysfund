@@ -1,4 +1,25 @@
 -- Model: Cleans and standardizes cohort 13 Forms responses.
+{% set question_columns = [
+    '1__Apa_itu_STUNTING_',
+    '2__Apa_bahaya_STUNTING_',
+    '3__Mengapa_1000_hari_pertama_kehidupan_sering_disebut_masa_pent',
+    '4__Ketika_memberikan_penyuluhan_dengan_Poster_Pintar__kader__na',
+    '5__Poster_Pintar_merupakan_media_penyuluhan_STUNTING__Poster_pi',
+    '6__Diketahui_umur_bayi_6_bulan_25_hari__Berapa_umur_penuh_saat_',
+    '7__Jika_pada_grafik_panjang_badan_menurut_umur__hasil_pengukura',
+    '8__Putra__laki_laki___saat_ini_berumur_1_tahun__panjang_badanny',
+    '9__Nelis_umur_18_bulan__sudah_bisa_berdiri_tegak__pintar_jika_d',
+    '10__Keluarga_bayi_Ani_baru_pindah_ke_desa_Kolbano__dan_baru_per',
+    '11__Bagian_tubuh_mana_yang_wajib_menempel_saat_mengukur_tinggi_',
+    '12__Manfaat_paling_utama_dalam_memantau_pertumbuhan_anak_secara',
+    '13__Langkah_1_adalah___',
+    '14__Langkah_2_adalah___',
+    '15__Langkah_3_adalah___',
+    '16__Langkah_4_adalah___',
+    '17__Langkah_5_adalah___',
+    '18__Apa_yang_dapat_dilakukan_setelah_hari_buka_posyandu_',
+    '19__Ketika_sasaran_baduta_dilakukan_penimbangan_berat_badan_di_'
+] %}
 {{ config(
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
@@ -26,7 +47,10 @@ with recursive source_rows as (
         cast("Nomor_HP_WA" as text) as phone_raw,
         cast("Jenis_Kelamin" as text) as jenis_kelamin_raw,
         cast("Posyandu_Binaan" as text) as posyandu_raw,
-        cast("Pendidikan_Terakhir" as text) as education_raw
+        cast("Pendidikan_Terakhir" as text) as education_raw,
+        {% for col in question_columns %}
+        cast("{{ col }}" as text) as q{{ loop.index }}_raw{% if not loop.last %},{% endif %}
+        {% endfor %}
     from {{ source('raw_sheets', 'training_13_forms_pre') }}
 
     union all
@@ -47,7 +71,10 @@ with recursive source_rows as (
         cast("Nomor_HP_WA" as text) as phone_raw,
         cast("Jenis_Kelamin" as text) as jenis_kelamin_raw,
         cast("Posyandu_Binaan" as text) as posyandu_raw,
-        cast("Pendidikan_Terakhir" as text) as education_raw
+        cast("Pendidikan_Terakhir" as text) as education_raw,
+        {% for col in question_columns %}
+        cast("{{ col }}" as text) as q{{ loop.index }}_raw{% if not loop.last %},{% endif %}
+        {% endfor %}
     from {{ source('raw_sheets', 'training_13_forms_post') }}
 ),
 
@@ -85,7 +112,11 @@ keyed as (
         {{ profile_name_key('jenis_kelamin_raw') }} as jenis_kelamin_key,
         {{ profile_name_key('education_raw') }} as education_key,
         {{ profile_name_key('peran_raw') }} as peran_key,
-        {{ profile_whatsapp_key('phone_raw') }} as phone_digits
+        {{ profile_whatsapp_key('phone_raw') }} as phone_digits,
+        -- Normalize answers the same way reference.training_answer is normalized.
+        {% for col in question_columns %}
+        nullif(btrim(lower(regexp_replace(q{{ loop.index }}_raw, '\s+', ' ', 'g'))), '') as q{{ loop.index }}{% if not loop.last %},{% endif %}
+        {% endfor %}
     from source_rows
 ),
 
@@ -184,6 +215,17 @@ with_unified as (
         ) as unified_name
     from normalized n
     left join name_group_map ngm on n.nama_key = ngm.nama_key
+),
+
+-- Pivot the reference answer key to one column per question.
+answer_key as (
+    select
+        {% for col in question_columns %}
+        max(nullif(btrim(lower(regexp_replace(correct_answer, '\s+', ' ', 'g'))), ''))
+            filter (where question_no = {{ loop.index }}) as k{{ loop.index }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    from reference.training_answer
+    where form_code = '13_forms'
 )
 
 select
@@ -216,5 +258,9 @@ select
     desa_key,
     kabupaten_key,
     kecamatan_key,
-    puskesmas_key
+    puskesmas_key,
+    {% for col in question_columns %}
+    case when k{{ loop.index }} is not null then coalesce(q{{ loop.index }} = k{{ loop.index }}, false) end as q{{ loop.index }}_correct{% if not loop.last %},{% endif %}
+    {% endfor %}
 from with_unified
+cross join answer_key
