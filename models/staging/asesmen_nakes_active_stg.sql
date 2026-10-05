@@ -35,7 +35,7 @@ typed_data as (
     select
         -- pembukaan
         nullif(btrim(json_payload ->> 'pembukaan/peserta_nama'), '')     as peserta_nama,
-        nullif(json_payload ->> 'pembukaan/tanggal', '')::date           as asesmen_tanggal,
+        nullif(json_payload ->> 'pembukaan/tanggal', '')::date           as date,
         nullif(btrim(json_payload ->> 'pembukaan/penilai_nama'), '')     as penilai_nama_kode,
         nullif(btrim(json_payload ->> 'pembukaan/penilai_nama_lain'), '') as penilai_nama_lain,
         nullif(btrim(json_payload ->> 'pembukaan/provinsi'), '')         as provinsi_kode,
@@ -190,9 +190,9 @@ final as (
 
     select
         d.peserta_nama,
-        d.asesmen_tanggal                                       as asesmen_tanggal,
-        extract(year from asesmen_tanggal)::int as year,
-        extract(year from asesmen_tanggal)::int || '-Q' || extract(quarter from asesmen_tanggal)::int as quarter,
+        d.date                                   as date,
+        extract(year from date)::int as year,
+        extract(year from date)::int || '-Q' || extract(quarter from date)::int as quarter,
         coalesce(d.penilai_nama_lain, d.penilai_nama_kode)      as penilai_nama,
 
         ref_prov.label                                          as provinsi,

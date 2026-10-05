@@ -83,7 +83,12 @@ keyed as (
         nullif(trim(jenis_kelamin_raw), '') as jenis_kelamin_raw,
         nullif(trim(posyandu_raw), '') as posyandu_raw,
         nullif(trim(education_raw), '') as education_raw,
-        {{ validate_date('timestamp_raw_text') }} as timestamp_raw,
+        case
+            when nullif(trim(timestamp_raw_text), '') is null then null
+            when trim(timestamp_raw_text) ~ '^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4} [0-9]{1,2}:[0-9]{2}:[0-9]{2}$'
+                then cast(to_timestamp(trim(timestamp_raw_text), 'MM/DD/YYYY HH24:MI:SS') as timestamp)
+            else cast(trim(timestamp_raw_text) as timestamp)
+        end as timestamp_raw,
         {{ profile_name_key('nama_raw') }} as nama_key,
         {{ profile_name_key('desa_raw') }} as desa_key,
         {{ profile_name_key('kabupaten_raw') }} as kabupaten_key,
@@ -124,7 +129,7 @@ normalized as (
             when education_key ~ '(^| )(d1|d2|d3|d4|s1|s2|s3|diploma|sarjana|ners)( |$)' then 'higher_education'
         end as education,
         case
-            when peran_key ~ '(bidan|perawat|gizi|tpg|tenaga kesehatan|nutrisionis|promkes|promosi kesehatan|pkb|plkb|sanitarian|pustu|kia)' then 'Health Worker'
+            when peran_key ~ '(bidan|perawat|gizi|tpg|tenaga kesehatan|nutrisionis|promkes|promosi kesehatan|pkb|plkb|sanitarian|pustu|kia|kesling|pelayanan)' then 'Health Worker'
             when peran_key ~ '(kader|kpm|dasawisma|daswisma|posyandu)' then 'Community Health Worker'
             when peran_key ~ '(^| )(tpk|pkk|sekdes|kepala desa|bpd|staf desa|perangkat desa|kasi)( |$)' then 'Task Force'
             else 'General'
