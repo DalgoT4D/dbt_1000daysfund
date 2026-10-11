@@ -1,6 +1,8 @@
--- Updated: 2026-08-05
+-- Updated: 2026-10-08
 
 -- Model: Cleans active Posyandu monitoring submissions and calculates scores.
+-- 2026-10-08: when posyandu / puskesmas is 'lainnya', take the name from the
+--             free-text fields pembukaan/posyandu_lain and pembukaan/puskesmas_lain.
 {{ config(materialized='table') }}
 
 -- Parse each nonblank raw Kobo payload as JSON.
@@ -32,6 +34,17 @@ typed_data as (
         nullif(btrim(json_payload ->> 'pembukaan/kecamatan'), '')                       as kecamatan_kode,
         nullif(btrim(json_payload ->> 'pembukaan/desa_kelurahan'), '')                  as desa_kelurahan_kode,
         nullif(btrim(json_payload ->> 'pembukaan/puskesmas'), '')                       as puskesmas_kode,
+
+        -- Free-text names entered when the enumerator picks 'lainnya'.
+        -- Strip a leading "Posyandu"/"Puskesmas" prefix, collapse whitespace,
+        -- and initcap to match the reference label casing.
+        initcap(nullif(btrim(regexp_replace(
+            regexp_replace(json_payload ->> 'pembukaan/posyandu_lain', '^\s*posyandu\s+', '', 'i'),
+            '\s+', ' ', 'g')), ''))                                                     as posyandu_lain,
+        initcap(nullif(btrim(regexp_replace(
+            regexp_replace(json_payload ->> 'pembukaan/puskesmas_lain', '^\s*puskesmas\s+', '', 'i'),
+            '\s+', ' ', 'g')), ''))                                                     as puskesmas_lain,
+
         nullif(btrim(json_payload ->> 'pembukaan/enumerator_peran'), '')                as enumerator_peran,
         nullif(btrim(json_payload ->> 'pembukaan/enumerator_nama_lain'), '')            as enumerator_nama_lain,
         {{ validate_date("(json_payload ->> 'pembukaan/kunjungan_tanggal')") }}         as kunjungan_tanggal,
@@ -88,8 +101,19 @@ final as (
         ref_kab.label                                                                     as kota_kabupaten,
         ref_kec.label                                                                     as kecamatan,
         ref_desa.label                                                                    as desa_kelurahan,
-        ref_pkm.label                                                                     as puskesmas,
-        ref_pyd.label                                                                     as posyandu,
+        case
+            when lower(typed_data.puskesmas_kode) = 'lainnya'
+                then coalesce(typed_data.puskesmas_lain, ref_pkm.label)
+            else ref_pkm.label
+        end                                                                               as puskesmas,
+        case
+            when lower(typed_data.posyandu_kode) = 'lainnya'
+                then coalesce(typed_data.posyandu_lain, ref_pyd.label)
+            else ref_pyd.label
+        end                                                                               as posyandu,
+        -- Lineage: true when the name came from free text rather than the Kobo choice list.
+        (lower(typed_data.puskesmas_kode) = 'lainnya' and typed_data.puskesmas_lain is not null) as puskesmas_is_lainnya,
+        (lower(typed_data.posyandu_kode)  = 'lainnya' and typed_data.posyandu_lain  is not null) as posyandu_is_lainnya,
         typed_data.enumerator_peran,
         typed_data.enumerator_nama_lain,
         typed_data.kunjungan_tanggal                                                      as kunjungan_tanggal,

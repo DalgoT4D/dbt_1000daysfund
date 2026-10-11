@@ -2,7 +2,7 @@
     materialized='table',
     persist_docs={'relation': true, 'columns': true},
     quoting={'identifier': true},
-    tags=["kobo", "chw_aim", "production"]
+    tags=["kobo", "chw_aim", "mart"]
 ) }}
 
 with ranked as (
