@@ -79,7 +79,7 @@ parsed as (
 filtered_quarters as (
     select *
     from parsed
-    where date >= date '2026-07-01'
+    where date >= date '2026-10-01'
 ),
 
 -- Apply approved district-name corrections.

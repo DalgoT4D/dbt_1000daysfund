@@ -252,24 +252,24 @@ district_lookup as (
 past_quarter_raw as (
     select
         nullif(trim("email"), '') as email,
-        nullif(trim("name"), '') as nama,
+        nullif(trim("nama"), '') as nama,
         null::varchar as unified_nama,
         nullif(trim("role"), '') as role,
         nullif(trim("whatsapp"), '') as whatsapp,
-        nullif(trim("district"), '') as kota_kabupaten_raw,
-        nullif(trim("province"), '') as provinsi,
+        nullif(trim("kota_kabupaten"), '') as kota_kabupaten_raw,
+        nullif(trim("provinsi"), '') as provinsi,
         nullif(trim("puskesmas"), '') as puskesmas,
-        nullif(trim("village"), '') as desa_kelurahan,
+        nullif(trim("desa_kelurahan"), '') as desa_kelurahan,
         nullif(trim("year"), '')::integer as year,
         nullif(trim("quarter"), '') as quarter,
         nullif(trim("date"), '')::date as date,
         round(nullif(trim("score"), '')::numeric)::integer as score,
-        nullif(trim("is_certified"), '') as is_certified,
+        nullif(trim("is_certified"), '')::boolean as is_certified,
         nullif(trim("modul"), '') as modul,
         nullif(trim("program"), '') as program,
         nullif(trim("is_latest"), '')::boolean as is_latest
     from {{ source('raw_sheets', 'ka_past_quarter') }}
-    where nullif(trim("date"), '')::date < date '2026-07-01'
+    where nullif(trim("date"), '')::date < date '2026-10-01'
 ),
 
 -- Look up each raw kota_kabupaten value; use the corrected value when there's
@@ -316,7 +316,7 @@ current_modules as (
         quarter,
         date,
         round(score)::integer as score,
-        case when score >= 80 then 'TRUE' when score is not null then 'FALSE' end as is_certified,
+        case when score >= 80 then true when score is not null then false end as is_certified,
         modul,
         null::varchar as program,
         rn = 1 as is_latest
