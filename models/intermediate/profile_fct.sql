@@ -9,20 +9,20 @@
 -- Standardize historical participant profiles.
 with past_profiles as (
     select
-        nullif(trim("name"), '') as name,
+        nullif(trim("nama"), '') as name,
         lower(nullif(trim("email"), '')) as email,
         nullif(trim("whatsapp"), '') as whatsapp,
         nullif(trim("role"), '') as role,
-        nullif(trim("district"), '') as district,
+        nullif(trim("kota_kabupaten"), '') as district,
         cast(nullif(trim("date"), '') as date) as date,
         cast(null as timestamp) as timestamp_raw,
         cast(null as varchar) as unified_name,
-        {{ profile_name_key('"name"') }} as profile_name_key,
-        {{ profile_name_key('"district"') }} as district_key,
+        {{ profile_name_key('"nama"') }} as profile_name_key,
+        {{ profile_name_key('"kota_kabupaten"') }} as district_key,
         {{ profile_whatsapp_key('"whatsapp"') }} as whatsapp_key,
         'past' as profile_period
     from {{ source('raw_sheets', 'ka_past_quarter') }}
-    where cast(nullif(trim("date"), '') as date) < date '2026-04-01'
+    where cast(nullif(trim("date"), '') as date) < date '2026-10-01'
 ),
 
 -- Standardize current participant profiles. ka_merge_int publishes these
@@ -43,7 +43,7 @@ current_profiles as (
         {{ profile_whatsapp_key('whatsapp') }} as whatsapp_key,
         'current' as profile_period
     from {{ ref('ka_merge_int') }}
-    where date >= date '2026-04-01'
+    where date >= date '2026-10-01'
 ),
 
 -- Stack historical and current profiles with person keys.

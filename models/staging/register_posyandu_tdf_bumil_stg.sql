@@ -14,6 +14,7 @@ with source as (
 ),
 
 -- Cast raw maternal register fields to analysis-ready types.
+-- Numeric casts are regex-guarded so a malformed cell becomes null instead of failing the build.
 typed as (
 
     select
@@ -43,22 +44,30 @@ typed as (
 
         -- mother identity & measures
         nullif(btrim(ibu_nama), '')                             as ibu_nama,
-        nullif(btrim(ibu_usia), '')::int                        as ibu_usia,
+        case when btrim(ibu_usia) ~ '^\d+$'
+             then btrim(ibu_usia)::int end                      as ibu_usia,
         nullif(btrim(ibu_hpht), '')::date                       as ibu_hpht,
-        case
-            when replace(btrim(ibu_tekanan_darah_sistolik), ',', '.')
-                     ~ '^[+-]?(\d+(\.\d*)?|\.\d+)$'
-                then replace(btrim(ibu_tekanan_darah_sistolik), ',', '.')::numeric
-            else null
+        case when replace(btrim(ibu_tekanan_darah_sistolik), ',', '.') ~ '^(\d+(\.\d*)?|\.\d+)$'
+             then replace(btrim(ibu_tekanan_darah_sistolik), ',', '.')::numeric
         end                                                     as ibu_tekanan_darah_sistolik,
-        nullif(btrim(ibu_tekanan_darah_diastolik), '')::numeric as ibu_tekanan_darah_diastolik,
-        nullif(btrim(ibu_lila), '')::numeric                    as ibu_lila,
-        nullif(btrim(ibu_ttd_mulai), '')::numeric               as ibu_ttd_mulai,
-        nullif(btrim(ibu_ttd_jumlah_raw), '')::numeric          as ibu_ttd_jumlah_raw,
-        nullif(btrim(ibu_anc_jumlah), '')::int                  as ibu_anc_jumlah,
+        case when replace(btrim(ibu_tekanan_darah_diastolik), ',', '.') ~ '^(\d+(\.\d*)?|\.\d+)$'
+             then replace(btrim(ibu_tekanan_darah_diastolik), ',', '.')::numeric
+        end                                                     as ibu_tekanan_darah_diastolik,
+        case when replace(btrim(ibu_lila), ',', '.') ~ '^(\d+(\.\d*)?|\.\d+)$'
+             then replace(btrim(ibu_lila), ',', '.')::numeric
+        end                                                     as ibu_lila,
+        case when replace(btrim(ibu_ttd_mulai), ',', '.') ~ '^(\d+(\.\d*)?|\.\d+)$'
+             then replace(btrim(ibu_ttd_mulai), ',', '.')::numeric
+        end                                                     as ibu_ttd_mulai,
+        case when replace(btrim(ibu_ttd_jumlah_raw), ',', '.') ~ '^(\d+(\.\d*)?|\.\d+)$'
+             then replace(btrim(ibu_ttd_jumlah_raw), ',', '.')::numeric
+        end                                                     as ibu_ttd_jumlah_raw,
+        case when btrim(ibu_anc_jumlah) ~ '^\d+$'
+             then btrim(ibu_anc_jumlah)::int end                as ibu_anc_jumlah,
 
         -- home-visit count (null = no home visit yet, not missing)
-        nullif(btrim(kr_jumlah), '')::int                       as kr_jumlah,
+        case when btrim(kr_jumlah) ~ '^\d+$'
+             then btrim(kr_jumlah)::int end                     as kr_jumlah,
         nullif(btrim(catatan), '')                              as catatan,
 
         -- provenance from the ingestion layer
@@ -74,62 +83,92 @@ typed as (
     from source
 
 ),
--- Rank duplicate ecords.
+
+-- Rank duplicate records. Rows missing a name or visit date can't be matched
+-- reliably (nulls would all fall into one partition), so they are kept as rank 1.
 keyed as (
 
     select
         *,
-        row_number() over (
-            partition by source_tab, posyandu, ibu_nama, kunjungan_tanggal
-            order by source_row
-        ) as dup_rank
+        case
+            when ibu_nama is null or kunjungan_tanggal is null then 1
+            else row_number() over (
+                partition by source_tab, posyandu, ibu_nama, kunjungan_tanggal
+                order by source_row nulls last, loaded_at
+            )
+        end as dup_rank
 
     from typed
 
 ),
--- Derive gestational age and trimester.
-gestational_age as (
+
+-- Gestational age in days. Null when either date is missing or HPHT is after the visit.
+ga_days as (
 
     select
         *,
-        (kunjungan_tanggal - ibu_hpht) / 7 as ibu_usia_kehamilan_minggu,  -- completed weeks
-        (kunjungan_tanggal - ibu_hpht)     as ibu_usia_kehamilan_hari,    -- total days
-
         case
-            when (kunjungan_tanggal - ibu_hpht) is null   then null
-            when (kunjungan_tanggal - ibu_hpht) / 7 < 14  then 1
-            when (kunjungan_tanggal - ibu_hpht) / 7 < 28  then 2
-            else 3
-        end as ibu_trimester
+            when kunjungan_tanggal is null or ibu_hpht is null then null
+            when kunjungan_tanggal < ibu_hpht                  then null
+            else kunjungan_tanggal - ibu_hpht
+        end as ibu_usia_kehamilan_hari
 
     from keyed
 
 ),
 
+-- Derive gestational weeks and trimester.
+gestational_age as (
+
+    select
+        *,
+        ibu_usia_kehamilan_hari / 7 as ibu_usia_kehamilan_minggu,  -- completed weeks
+
+        case
+            when ibu_usia_kehamilan_hari is null      then null
+            when ibu_usia_kehamilan_hari / 7 < 14     then 1
+            when ibu_usia_kehamilan_hari / 7 < 28     then 2
+            else 3
+        end as ibu_trimester
+
+    from ga_days
+
+),
+
 -- Calculate iron-folic-acid adherence.
+-- tablets taken / days eligible (GA days - start week in days).
+-- Null when any input is missing or eligible days <= 0 (IFA start at/after the visit).
 ifa as (
 
     select
         *,
-        -- tablets taken / days eligible for IFA (GA days - start week converted to days)
-        round(
-            ibu_ttd_jumlah_raw
-            / nullif(ibu_usia_kehamilan_hari - (ibu_ttd_mulai * 7), 0)::numeric,
-            2
-        ) as ibu_ttd_perc
+        case
+            when ibu_ttd_jumlah_raw is null
+              or ibu_ttd_mulai is null
+              or ibu_usia_kehamilan_hari is null               then null
+            when ibu_usia_kehamilan_hari - (ibu_ttd_mulai * 7) <= 0 then null
+            else round(
+                ibu_ttd_jumlah_raw
+                / (ibu_usia_kehamilan_hari - (ibu_ttd_mulai * 7))::numeric,
+                2
+            )
+        end as ibu_ttd_perc
 
     from gestational_age
 
 ),
 
--- Derive maternal health and care checks.
+-- Derive maternal health and care checks. Missing inputs return null (unknown).
 checks as (
 
     select
         *,
 
         -- KEK screening: LILA >= 23.5 cm  (TRUE = adequate, i.e. NOT KEK)
-        (ibu_lila >= 23.5) as ibu_kek_check,
+        case
+            when ibu_lila is null then null
+            else ibu_lila >= 23.5
+        end as ibu_kek_check,
 
         -- minimum ANC for gestational age
         case
@@ -144,14 +183,26 @@ checks as (
         end as ibu_anc_check,
 
         -- hypertension: systolic >= 140 OR diastolic >= 90
-        (ibu_tekanan_darah_sistolik >= 140)
-            or (ibu_tekanan_darah_diastolik >= 90) as ibu_hipertensi_check,
+        -- one high reading is enough for TRUE; FALSE needs both readings present.
+        case
+            when ibu_tekanan_darah_sistolik >= 140
+              or ibu_tekanan_darah_diastolik >= 90             then true
+            when ibu_tekanan_darah_sistolik is null
+              or ibu_tekanan_darah_diastolik is null           then null
+            else false
+        end as ibu_hipertensi_check,
 
         -- high-risk maternal age: < 17 or > 35
-        (ibu_usia < 17 or ibu_usia > 35) as ibu_risti_check,
+        case
+            when ibu_usia is null then null
+            else ibu_usia < 17 or ibu_usia > 35
+        end as ibu_risti_check,
 
         -- IFA adherence: >= 100% of eligible days covered
-        (ibu_ttd_perc >= 1) as ibu_ttd_check
+        case
+            when ibu_ttd_perc is null then null
+            else ibu_ttd_perc >= 1
+        end as ibu_ttd_check
 
     from ifa
 

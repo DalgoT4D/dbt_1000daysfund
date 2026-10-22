@@ -69,6 +69,12 @@ sources:
         identifier: 'register_posyandu_pemerintah_baduta'
       - name: 'register_posyandu_pemerintah_bumil'
         identifier: 'register_posyandu_pemerintah_bumil'
+      - name: 'satgas_baduta'
+        identifier: 'satgas_baduta'
+      - name: 'satgas_bumil'
+        identifier: 'satgas_bumil'
+      - name: 'satgas_supervisor'
+        identifier: 'satgas_supervisor' 
       - name: 'monitoring_posyandu_old'
         identifier: 'monitoring_posyandu_old'
 
