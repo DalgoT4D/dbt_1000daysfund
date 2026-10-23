@@ -167,7 +167,7 @@ checks as (
         -- KEK screening: LILA >= 23.5 cm  (TRUE = adequate, i.e. NOT KEK)
         case
             when ibu_lila is null then null
-            else ibu_lila >= 23.5
+            else ibu_lila < 23.5
         end as ibu_kek_check,
 
         -- minimum ANC for gestational age
