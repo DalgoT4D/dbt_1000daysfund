@@ -18,6 +18,8 @@
 --
 -- person_id: md5 of the linked pair of src_person_ids, or the person's own
 -- src_person_id when unlinked. Only person_id is comparable across sources.
+-- unified_name: one display name per person_id (TDF spelling preferred, else pemerintah),
+-- the same in every month.
 --
 -- Cross-source linkage (one-to-one, within kabupaten and responden_kategori), on
 -- unified names:
@@ -82,6 +84,7 @@ persons as (
         src_person_id,
         src,
         responden_kategori,
+        max(unified_name)                                         as unified_name,
         max(unified_name_key)                                     as name_key,
         split_part(max(unified_name_key), ' ', 1)                 as first_token,
         regexp_replace(max(unified_name_key), '^.* ', '')         as last_token,
@@ -165,6 +168,20 @@ person_map as (
     left join links l
         on (v.src = 'pem' and l.pem_person_id = v.src_person_id)
         or (v.src = 'tdf' and l.tdf_person_id = v.src_person_id)
+),
+
+-- One display name per cross-source person: the TDF unified_name when the person is
+-- in the TDF register, otherwise the pemerintah one. Same value in every month.
+person_names as (
+    select
+        m.person_id,
+        coalesce(
+            max(p.unified_name) filter (where p.src = 'tdf'),
+            max(p.unified_name) filter (where p.src = 'pem')
+        ) as unified_name
+    from person_map m
+    join persons p using (src_person_id)
+    group by 1
 ),
 
 -- Latest visit per person per month within each source.
@@ -264,6 +281,7 @@ select
 
     -- linkage
     coalesce(p.person_id, t.person_id)                                   as person_id,
+    n.unified_name,
     p.src_person_id                                                      as pem_src_person_id,
     t.src_person_id                                                      as tdf_src_person_id,
     case
@@ -279,3 +297,5 @@ select
 from pem p
 full outer join tdf t
     on p.person_id = t.person_id and p.visit_month = t.visit_month
+left join person_names n
+    on n.person_id = coalesce(p.person_id, t.person_id)
